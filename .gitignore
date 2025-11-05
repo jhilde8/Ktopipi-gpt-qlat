@@ -2,3 +2,6 @@ results/
 cache/
 locks/
 log.full.txt
+shells/
+.ipynb_checkpoints/
+ch14.ipynb
