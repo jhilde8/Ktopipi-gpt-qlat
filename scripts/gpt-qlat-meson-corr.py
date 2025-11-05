@@ -32,16 +32,12 @@ load_path_list[:] = [
 # ----
 
 #point source meson correlator
-#cosine is symmetric. Any permutations of negative signs that change the overall sign
-# in the cosine will be identical. 
 
 #We average over specific fourier components that produce an identical energy or an equivalent momentum magnitude. 
 
 def wave_function_mode_0(c12, size):
     return 1.0
 
-#an average over the three directions for the (0,0,1) mode
-#we should potentially average over (0,0,-1)'s ? 
 def wave_function_mode_1(c12, size):
     x, y, z, t, = c12.to_tuple()
     xs, ys, zs, ts, = size.to_tuple()
@@ -51,8 +47,6 @@ def wave_function_mode_1(c12, size):
     w = (w1 + w2 + w3) / 3.0
     return w
 
-
-#average over three positive momenta modes (0,1,1)
 def wave_function_mode_2(c12, size):
     x, y, z, t, = c12.to_tuple()
     xs, ys, zs, ts, = size.to_tuple()
@@ -66,8 +60,6 @@ def wave_function_mode_2(c12, size):
     w = (w1 + w2 + w3 + w4 + w5 + w6) / 6.0
     return w
 
-
-#(1,1,1)
 def wave_function_mode_3(c12, size):
     x, y, z, t, = c12.to_tuple()
     xs, ys, zs, ts, = size.to_tuple() 
@@ -78,7 +70,6 @@ def wave_function_mode_3(c12, size):
     w = (w1 + w2 + w3 + w4) / 4.0
     return w
 
-#exponential version of (1,1,1)
 def wave_function_mode_4(c12, size):
     x, y, z, t, = c12.to_tuple()
     xs, ys, zs, ts, = size.to_tuple() 
@@ -94,13 +85,10 @@ def wave_function_mode_4(c12, size):
 
 wave_function_mode_dict = dict()
 wave_function_mode_dict[0] = wave_function_mode_0 #Identity momentum projection
-#wave_function_mode_dict[1] = wave_function_mode_1
-#wave_function_mode_dict[2] = wave_function_mode_2
-#wave_function_mode_dict[3] = wave_function_mode_3
+wave_function_mode_dict[1] = wave_function_mode_1
+wave_function_mode_dict[2] = wave_function_mode_2
+wave_function_mode_dict[3] = wave_function_mode_3
 #wave_function_mode_dict[4] = wave_function_mode_4
-#wave_function_mode_dict[5] = wave_function_mode_5
-#wave_function_mode_dict[6] = wave_function_mode_6
-#wave_function_mode_dict[7] = wave_function_mode_7
 
 def wave_function(p1, p2, mode, size):
     p1_tag, c1 = p1
@@ -193,7 +181,7 @@ def get_cexpr_meson_corr_psnk_psrc():
             )
 
 @q.timer(is_timer_fork=True)
-def auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
+def auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
     fn = f"{job_tag}/auto-contract/traj-{traj}/meson_corr_psnk_psrc.lat"
     if get_load_path(fn) is not None:
@@ -262,7 +250,7 @@ def auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_pro
         q.json_results_append(f"{fname}: ld '{en}' sig", q.get_data_sig_arr(ld[i], q.RngState(), 4))
 
 @q.timer(is_timer_fork=True)
-def auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
+def auto_contract_meson_corr_psnk_psrc_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
     fn = f"{job_tag}/auto-contract-pos-4/traj-{traj}/meson_corr_psnk_psrc_psel.lat"
     if get_load_path(fn) is not None:
@@ -363,143 +351,31 @@ def auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_pse
         q.json_results_append(f"{fname}: ld '{en}' sig", q.get_data_sig_arr(ld[i], q.RngState(), 4))
 
 # ----
-#Wall source pion correlator
-# ----
-
-
-def pipi_wave_function_mode_0(c12, size, pipi_op_dis_4d_sqr_limit):
-    x, y, z, t, = c12.to_tuple()
-    xs, ys, zs, ts, = size.to_tuple()
-    dis_4d_sqr = c12.sqr()
-    if dis_4d_sqr <= pipi_op_dis_4d_sqr_limit:
-        return 0.0
-    return 1.0
-
-#momentum mode (0,0,1) and permutations
-def pipi_wave_function_mode_1(c12,size, pipi_op_dis_4d_sqr_limit):
-    x, y, z, t, = c12.to_tuple()
-    xs, ys, zs, ts, = size.to_tuple()
-    dis_4d_sqr = c12.sqr()
-    if dis_4d_sqr <= pipi_op_dis_4d_sqr_limit:
-        return 0.0
-    w1 = np.cos(2.0 * np.pi * x/xs)
-    w2 = np.cos(2.0 * np.pi * y/ys)
-    w3 = np.cos(2.0 * np.pi * z/zs)
-    w = (w1 + w2 + w3)/3.0
-    return w
-
-def pipi_wave_function_mode_2(c12,size,pipi_op_dis_4d_sqr_limit):
-    x, y, z, t, = c12.to_tuple()
-    xs, ys, zs, ts, = size.to_tuple()
-    dis_4d_sqr = c12.sqr()
-    if dis_4d_sqr <= pipi_op_dis_4d_sqr_limit:
-        return 0.0
-    else:   
-        w1 = np.cos((2.0 * np.pi * x / xs) + (2.0 * np.pi * y / ys))
-        w2 = np.cos((2.0 * np.pi * y / ys) + (2.0 * np.pi * z / zs))
-        w3 = np.cos((2.0 * np.pi * z / zs) + (2.0 * np.pi * x / xs))
-
-        w4 = np.cos((2.0 * np.pi * x / zs) - (2.0 * np.pi * y / xs))
-        w5 = np.cos((2.0 * np.pi * y / zs) - (2.0 * np.pi * z / xs))
-        w6 = np.cos((2.0 * np.pi * z / zs) - (2.0 * np.pi * x / xs))
-        w = (w1 + w2 + w3 + w4 + w5 + w6) / 6.0
-        return w
-
-def pipi_wave_function_mode_3(c12, size, pipi_op_dis_4d_sqr_limit):
-    x, y, z, t, = c12.to_tuple()
-    xs, ys, zs, ts, = size.to_tuple()
-    dis_4d_sqr = c12.sqr()
-    if dis_4d_sqr <= pipi_op_dis_4d_sqr_limit:
-        return 0.0
-    else:
-        w1 = np.cos((2.0 * np.pi * x / xs) + (2.0 * np.pi * y / ys) + (2.0 * np.pi * z / zs))
-        w2 = np.cos((2.0 * np.pi * x / xs) + (2.0 * np.pi * y / ys) - (2.0 * np.pi * z / zs))
-        w3 = np.cos((2.0 * np.pi * x / xs) - (2.0 * np.pi * y / ys) + (2.0 * np.pi * z / zs))
-        w4 = np.cos(-(2.0 * np.pi * x / xs) + (2.0 * np.pi * y / ys) + (2.0 * np.pi * z / zs))
-        w = (w1 + w2 + w3 + w4) / 4.0
-        return w
-
-#change this to include all modes we want
-# pipi_op_tsep must change to the number of inlcuded modes
-pipi_wave_function_mode_dict = dict()
-pipi_wave_function_mode_dict[0] = pipi_wave_function_mode_0
-pipi_wave_function_mode_dict[1] = pipi_wave_function_mode_1
-pipi_wave_function_mode_dict[2] = pipi_wave_function_mode_2
-pipi_wave_function_mode_dict[3] = pipi_wave_function_mode_3
-
-def pipi_wave_function(p1, p2, mode, size, pipi_op_dis_4d_sqr_limit):
-    p1_tag, c1 = p1
-    p2_tag, c2 = p2
-    c1 = q.Coordinate(c1)
-    c2 = q.Coordinate(c2)
-    c12 = q.smod_coordinate(c1 - c2, size)
-    if mode not in pipi_wave_function_mode_dict:
-        fname = q.get_fname()
-        raise Exception(f"{fname}: {p1} {p2} {mode} {size}")
-    wf = pipi_wave_function_mode_dict[mode]
-    return wf(c12, size, pipi_op_dis_4d_sqr_limit)
+#Wall source meson correlator
 
 @q.timer
-def get_cexpr_pipi_corr_psnk_psrc():
-    fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_corr_psnk_psrc"
+def get_cexpr_meson_corr():
+    fn_base = "cache/auto_contract_cexpr/get_cexpr_sigma_corr"
     def calc_cexpr():
         diagram_type_dict = dict()
+        diagram_type_dict[((('x_1', 'x_2'), 1), (('x_2', 'x_1'), 1))] = 'Type1'
+        diagram_type_dict[((('x_1', 'x_1'), 1), (('x_2', 'x_2'), 1))] = 'Type2'
         exprs = [
                 mk_fac(1) + f"1",
+                mk_pi_0("x_2", True) * mk_pi_0("x_1")  + f"pi0^dag(0) * pi0(-tsep)",
                 ]
-        for mode_src in [ 0, 1, 2, 3]:
-            for mode_snk in [ 0, 1, 2, 3]:
-                exprs += [
-                        #
-                         #mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
-                         #* mk_fac(f"pipi_wave_function(src_1, src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-                         #* mk_pipi_i22("snk_1", "snk_2", True)
-                         #* mk_pipi_i22("src_1", "src_2")
-                         #+ f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i22+^dag(0) * pipi_i22(-tsep)",
-                        #
-                        mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
-                        * mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-                        * mk_pipi_i20("snk_1", "snk_2", True) #true refers to the is_dagger boolean
-                        * mk_pipi_i20("src_1", "src_2")
-                        + f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i20^dag(0) * pipi_i20(-tsep)",
-                        #
-                        #mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_pipi_i00("snk_1", "snk_2", True)
-                        #* mk_pipi_i00("src_1", "src_2")
-                        #+ f"wf_snk({mode_snk}) * sf_src({mode_src}) * pipi_i00^dag(0) * pipi_i00(-tsep)",
-                        #
-                        ]
-        cexpr = contract_simplify_compile(
-                *exprs,
-                is_isospin_symmetric_limit=True,
-                diagram_type_dict=diagram_type_dict,
-                )
+        cexpr = contract_simplify_compile(*exprs, is_isospin_symmetric_limit=True, diagram_type_dict=diagram_type_dict)
         return cexpr
-    base_positions_dict = dict()
-    base_positions_dict["pipi_wave_function"] = pipi_wave_function
-    base_positions_dict["pipi_op_dis_4d_sqr_limit"] = 0.5 # default value, to be overrided by `pd`.
-    return cache_compiled_cexpr(
-            calc_cexpr,
-            fn_base,
-            is_cython=is_cython,
-            base_positions_dict=base_positions_dict,
-            )
+    return cache_compiled_cexpr(calc_cexpr, fn_base, is_cython=is_cython)
 
-#def auto_contract_thermal_pipi_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
-#    fname = q.get_fname()
-#    fn = f"{job_tag}/auto_contract_thermal/traj-{traj}/thermal_pipi_corr.lat"
-#    if get_load_path(fn) is not None:
-#        return
-
-
+#wall-wall contraction
 @q.timer(is_timer_fork=True)
-def auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
+def auto_contract_meson_corr(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-test/traj-{traj}/pipi_corr_psnk_psrc.lat"
+    fn = f"{job_tag}/auto-contract-pipi-I0-D5/traj-{traj}/meson_corr.lat"
     if get_load_path(fn) is not None:
         return
-    cexpr = get_cexpr_pipi_corr_psnk_psrc()
+    cexpr = get_cexpr_meson_corr()
     expr_names = get_expr_names(cexpr)
     total_site = q.Coordinate(get_param(job_tag, "total_site"))
     t_size = total_site[3]
@@ -513,122 +389,40 @@ def auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob
     fsel_n_elems = fsel.n_elems
     fsel_prob_arr = fsel_prob[:].ravel()
     psel_prob_arr = psel_prob[:].ravel()
-    xg_psel_arr = psel[:]
     xg_fsel_arr = fsel.to_psel_local()[:]
-    #
-    # pidx_list_list[t_slice] == [ pidx1, pidx2, ... ]
-    # xg_psel_arr[pidx1][3] == t_slice
-    pidx_list_list = [ [] for i in range(t_size) ]
-    for pidx in range(len(xg_psel_arr)):
-        xg = xg_psel_arr[pidx]
-        pidx_list_list[xg[3]].append(pidx)
-    #
     geo = q.Geometry(total_site)
     total_volume = geo.total_volume
-    pipi_op_t_sep = get_param(job_tag, "measurement", "pipi_op_t_sep")
-    pipi_op_dis_4d_sqr_limit = get_param(job_tag, "measurement", "pipi_op_dis_4d_sqr_limit")
-    pipi_corr_t_sep_list = get_param(job_tag, "measurement", "pipi_corr_t_sep_list")
-    data_list = []
-    # This bit iterates through all source locations, and finds each sink location based on the time separation we want, set in the parameter block
-    # Each source location's timeslice is saved, and the sink ts is calculated from the t_sep of that current iteration, for which the full 
-    # sink location is reconstructed, iterating through each possible sink given the sink ts. These pairs of locations are saved in data_list.
-    for pidx_src in range(len(xg_psel_arr)):
-        xg_src = q.Coordinate(xg_psel_arr[pidx_src])
-        t_src = xg_src[3]
-        for t_sep_idx, t_sep in enumerate(pipi_corr_t_sep_list):
-            assert t_sep > 0
-            t_snk = (t_src + t_sep) % t_size
-            for pidx_snk in pidx_list_list[t_snk]:
-                xg_snk = q.Coordinate(xg_psel_arr[pidx_snk])
-                assert xg_snk[3] == t_snk
-                if pidx_snk == pidx_src:
-                    continue
-                data_list.append((pidx_snk, pidx_src, t_sep_idx,))
+
     def load_data():
-
-        lsize = 8
-
-        data_list_chunk = q.get_mpi_chunk(data_list)
-        data_list_size = len(data_list_chunk)
-        for data_list_idx, (pidx_snk, pidx_src, t_sep_idx,) in enumerate(data_list_chunk):
-            yield data_list_idx, data_list_size, pidx_snk, pidx_src, t_sep_idx
+        t_t_list = q.get_mpi_chunk(
+                [ (t_src, t_snk,) for t_snk in range(total_site[3]) for t_src in range(total_site[3]) ],
+                rng_state=None)
+        for t_src, t_snk in t_t_list:
+            yield t_src, t_snk
     @q.timer
     def feval(args):
-        data_list_idx, data_list_size, pidx_snk, pidx_src, t_sep_idx = args
-        assert pidx_src != pidx_snk
-        xg_snk = q.Coordinate(xg_psel_arr[pidx_snk])
-        xg_src = q.Coordinate(xg_psel_arr[pidx_src])
-        t_snk = xg_snk[3]
-        t_src = xg_src[3]
-        assert pidx_snk != pidx_src
-        prob1 = psel_prob_arr[pidx_snk] * psel_prob_arr[pidx_src]
-        pidx_snk_src_2_list = []
-        #each two pion operator has some separation between pions within that operator, the input to feval in the two pion case is a source AND sink, and then based on the 
-        # internal pion separation, two other source and sink locations are constructed in the same way as above, since one timeslice may have multiple suorce locations. 
-        pipiop_tsep = [4]
-        for pipi_op_t_sep in pipiop_tsep: #iterate over possible internal pion separations, using the same internal sep for source and sink operator
-            t_src_2 = (t_src - pipi_op_t_sep) % t_size
-            #for pipi_op_t_sep_snk in pipiop_tsep:
-            t_snk_2 = (t_snk + pipi_op_t_sep) % t_size
-            for pidx_src_2 in pidx_list_list[t_src_2]:
-                if pidx_src_2 in [ pidx_snk, pidx_src, ]:
-                    continue
-                for pidx_snk_2 in pidx_list_list[t_snk_2]:
-                    if pidx_snk_2 in [ pidx_src_2, pidx_snk, pidx_src, ]:
-                        continue
-                    prob2 = psel_prob_arr[pidx_snk_2] * psel_prob_arr[pidx_src_2]
-                    prob = prob1 * prob2
-                    pidx_snk_src_2_list.append((pidx_snk_2, pidx_src_2, prob,)) #we then save a list of the second source and sink locations
-        #values array holds the evaluation of a given expression for each internal pion separation for both initial and final pions for each expression
-        values = np.zeros(
-                (len(pipiop_tsep),
-                 len(expr_names),
-                 ),
-                dtype=np.complex128,
-                )
-        
-        #iterating over the second sources and sinks, we evaluate each expression with the given source and sink locations, and assign them to the values array
-        for pidx_snk_2, pidx_src_2, prob in pidx_snk_src_2_list:
-            xg_snk_2 = q.Coordinate(xg_psel_arr[pidx_snk_2])
-            xg_src_2 = q.Coordinate(xg_psel_arr[pidx_src_2])
-            t_snk_2 = xg_snk_2[3]
-            t_src_2 = xg_src_2[3]
-            pipi_op_t_sep_snk = (t_snk_2 - t_snk) % t_size
-            pipi_op_t_sep_src = (t_src - t_src_2) % t_size
-            assert pipi_op_t_sep_snk == pipi_op_t_sep_src
-            pd = {
-                    "snk_1": ("point", xg_snk.to_tuple(),),
-                    "snk_2": ("point", xg_snk_2.to_tuple(),),
-                    "src_1": ("point", xg_src.to_tuple(),),
-                    "src_2": ("point", xg_src_2.to_tuple(),),
-                    "size": total_site,
-                    "pipi_op_dis_4d_sqr_limit": pipi_op_dis_4d_sqr_limit,
-                    }
-            val = eval_cexpr(cexpr, positions_dict=pd, get_prop=get_prop)
-            values[0] += val / prob
-        return values, t_sep_idx, data_list_idx, data_list_size
+        t_src, t_snk = args
+        t = (t_snk - t_src) % total_site[3]
+        pd = {
+                "x_2" : ("wall", t_snk,),
+                "x_1" : ("wall", t_src,),
+                "size" : total_site,
+                }
+        val = eval_cexpr(cexpr, positions_dict=pd, get_prop=get_prop)
+        return val, t
     def sum_function(val_list):
-        pipiop_tsep = [4]
-        values = np.zeros(
-                (len(pipi_corr_t_sep_list), 
-                 len(pipiop_tsep),
-                 len(expr_names),
-                 ),
-                dtype=np.complex128,
-                )
-        for val, t_sep_idx, data_list_idx, data_list_size in val_list:
-            if data_list_idx % (data_list_size // 1024 + 4) == 0:
-                q.displayln_info(0, f"{fname}: {data_list_idx}/{data_list_size}")
-            values[t_sep_idx] += val
-        return values.transpose(2, 0, 1,)
-    res_sum = q.parallel_map_sum(feval, load_data(), sum_function=sum_function, chunksize=1)
+        values = np.zeros((total_site[3], len(expr_names),), dtype=np.complex128)
+        for val, t in val_list:
+            values[t] += val
+        return values.transpose(1, 0)
+    auto_contractor_chunk_size = get_param(job_tag, "measurement", "auto_contractor_chunk_size", default=128)
+    res_sum = q.parallel_map_sum(feval, load_data(), sum_function=sum_function, chunksize=auto_contractor_chunk_size)
     res_sum = q.glb_sum(res_sum)
-    res_sum *= 1.0 / (t_size * (total_volume / t_size) * (total_volume / t_size))
-    pipiop_tsep = [4]
+    res_sum *= 1.0 / total_site[3]
+    assert q.qnorm(res_sum[0] - 1.0) < 1e-10
     ld = q.mk_lat_data([
         [ "expr_name", len(expr_names), expr_names, ],
-        [ "t_sep", len(pipi_corr_t_sep_list), pipi_corr_t_sep_list, ],
-        [ "pipi_op_t_sep_snk", len(pipiop_tsep), [ str(i+1) for i in range(len(pipiop_tsep)) ], ],
+        [ "t_sep", t_size, [ str(q.rel_mod(t, t_size)) for t in range(t_size) ], ],
         ])
     ld.from_numpy(res_sum)
     ld.save(get_save_path(fn))
@@ -636,14 +430,7 @@ def auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob
     for i, en in enumerate(expr_names):
         q.json_results_append(f"{fname}: ld '{en}' sig", q.get_data_sig_arr(ld[i], q.RngState(), 4))
 
-# This contraction function returns a set of values for each two pion operator separation (set to [0,16] for now), each internal pion separation for the source and sink two pion operator
-# and each expression (effectively momentum mode at this point). 
-
-# ----
-# pipi_jj wall source
-# ----
-# pipi_jj point source
-# ----
+#----------
 
 @q.timer(is_timer_fork=True)
 def run_auto_contraction(
@@ -672,8 +459,11 @@ def run_auto_contraction(
    #     auto_contract_pipi_jj(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
    # if use_fsel_prop:
    #     auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
-    #auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
-    auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    
+    #auto_contract_meson_corr_psnk_psrc_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    #auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    #auto_contract_meson_corr(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    
     #
     q.qtouch_info(get_save_path(fn_checkpoint))
     q.release_lock()

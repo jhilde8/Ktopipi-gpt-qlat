@@ -30,6 +30,8 @@ load_path_list[:] = [
 
 # ----
 
+#TODO: include the pipi wall source contraction functions
+
 #define eta and eta prime operators
 
 #eta = 1/sqrt(6)(u*gamma5*ubar + d*gamma5*dbar - 2s*gamma5*sbar)
