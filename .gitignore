@@ -5,3 +5,4 @@ log.full.txt
 shells/
 .ipynb_checkpoints/
 ch14.ipynb
+scripts/gpt-qlat-pipi-corr.py
