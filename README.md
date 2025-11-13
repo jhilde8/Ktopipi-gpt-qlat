@@ -1,0 +1,1 @@
+This repository is currenlty a large work in progress. This repo currently holds all of the code I am using for calculation of correlation functions using point source propagators with Qlattice's automatic contractor.
