@@ -6,3 +6,6 @@ shells/
 .ipynb_checkpoints/
 ch14.ipynb
 scripts/gpt-qlat-pipi-corr.py
+propagators/
+saved_data/
+analysis/pipi_avg_data.npy
