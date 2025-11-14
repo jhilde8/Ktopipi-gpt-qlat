@@ -18,18 +18,12 @@ is_cython = not is_test()
 
 load_path_list[:] = [
         "results",
-        "qcddata",
-        "/lustre20/volatile/qcdqedta/qcddata",
-        "/lustre20/volatile/decay0n2b/qcddata",
-        "/lustre20/volatile/pqpdf/ljin/qcddata",
-        "/data1/qcddata2",
-        "/data1/qcddata3",
-        "/data2/qcddata3-prop",
+        #"qcddata",
+        #"/data1/qcddata2",
+        #"/data1/qcddata3",
+        #"/data2/qcddata3-prop",
+        "/direct/sdcc+lustre01/LQCD/jhildebra/psrc_props"
         ]
-
-# ----
-#Wall source meson correlator
-# ----
 
 #point source meson correlator
 
@@ -110,15 +104,15 @@ def get_cexpr_meson_corr_psnk_psrc():
         diagram_type_dict[((('x_1', 'x_2'), 1), (('x_2', 'x_1'), 1))] = 'Type1'
         diagram_type_dict[((('x_1', 'x_1'), 1), (('x_2', 'x_2'), 1))] = None
         exprs = [
-                mk_fac(1) + f"1",  mk_fac(1) * mk_pi_p("x_2", True)    * mk_pi_p("x_1")
-                    + f" <1> * pi+^dag(0) * pi+(-tsep)", ]
-       # for mode in [0]:
-       #     exprs += [
+                mk_fac(1) + f"1", 
+                #mk_pi_p("x_2", True)    * mk_pi_p("x_1") + f"pi+^dag(0) * pi+(-tsep)",
+                ]
+        for mode in [0,1,2,3]:
+            exprs += [
                     #
-                   # mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
-                   #  mk_fac(1)
-                   # * mk_pi_p("x_2", True)    * mk_pi_p("x_1")
-                   # + f"wf({mode}) * pi+^dag(0) * pi+(-tsep)",
+                    mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
+                    * mk_pi_p("x_2", True)    * mk_pi_p("x_1")
+                    + f"wf({mode}) * pi+^dag(0) * pi+(-tsep)",
                     #
                    # mk_fac(f"wave_function(x_1,x_2, {mode}, size)")
                    # * mk_pi_m("x_2",True) * mk_pi_m("x_1")
@@ -183,7 +177,7 @@ def get_cexpr_meson_corr_psnk_psrc():
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract/traj-{traj}/meson_corr_psnk_psrc.lat"
+    fn = f"{job_tag}/auto-contract-meson/traj-{traj}/meson_corr_mom.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -252,7 +246,7 @@ def auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pos-4/traj-{traj}/meson_corr_psnk_psrc_psel.lat"
+    fn = f"{job_tag}/auto-contract-meson/traj-{traj}/meson_corr_pos.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -333,7 +327,7 @@ def auto_contract_meson_corr_psnk_psrc_pos(job_tag, traj, get_get_prop, get_psel
         for val in val_list:
             values += val
            # valtp = np.transpose(values) #this probably takes a while
-        return values
+        return values.transpose(4,0,1,2,3)
     res_sum = q.parallel_map_sum(feval, load_data(), sum_function=sum_function, chunksize=1)
     res_sum = q.glb_sum(res_sum)
     res_sum *= 1.0 / (t_size * (total_volume / t_size))
@@ -441,7 +435,7 @@ def run_auto_contraction(
         get_fsel_prob,
         ):
     fname = q.get_fname()
-    fn_checkpoint = f"{job_tag}/auto-contract-pipi-test/traj-{traj}/checkpoint.txt"
+    fn_checkpoint = f"{job_tag}/auto-contract-meson/traj-{traj}/checkpoint.txt"
     if get_load_path(fn_checkpoint) is not None:
         q.displayln_info(0, f"{fname}: '{fn_checkpoint}' exists.")
         return
@@ -460,8 +454,8 @@ def run_auto_contraction(
    # if use_fsel_prop:
    #     auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
     
-    #auto_contract_meson_corr_psnk_psrc_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
-    #auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    auto_contract_meson_corr_psnk_psrc_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
     #auto_contract_meson_corr(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
     
     #
@@ -574,7 +568,7 @@ def run_job_contraction(job_tag, traj):
         #
     #
     fns_produce = [
-            f"{job_tag}/auto-contract-pipi-test/traj-{traj}/checkpoint.txt",
+            f"{job_tag}/auto-contract-meson/traj-{traj}/checkpoint.txt",
             #
             ]
     fns_need = [
@@ -725,7 +719,7 @@ if __name__ == "__main__":
             q.clean_cache()
             try_gracefully_finish()
     k_count = 0
-    ncf = 8
+    ncf = 25
     for job_tag, traj in job_tag_traj_list:
         if is_performing_contraction:
             q.check_time_limit()
