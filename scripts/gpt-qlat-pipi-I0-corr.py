@@ -594,7 +594,7 @@ def get_cexpr_pipi_dc_sub():
             )
 
 def get_cexpr_pipi_vac_pos_avg():
-    fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_vev_pos"
+    fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_vev_pos_avg"
     def calc_cexpr():
         diagram_type_dict = dict()
 
@@ -718,12 +718,12 @@ def get_cexpr_pipi_corr_psnk_psrc():
 
 def auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-I0D5-p/traj-{traj}/pipi_vev.lat"
+    fn = f"{job_tag}/auto-contract-pipi-dc-sub/traj-{traj}/pipi_vev.lat"
     if get_load_path(fn) is not None:
         return
 
-    cexpr = get_cexpr_pipi_vac()
-    #cexpr = get_cexpr_pipi_dc_sub()
+    #cexpr = get_cexpr_pipi_vac()
+    cexpr = get_cexpr_pipi_dc_sub()
     expr_names = get_expr_names(cexpr)
     total_site = q.Coordinate(get_param(job_tag, "total_site"))
     t_size = total_site[3]
@@ -813,13 +813,13 @@ def auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob,
         q.json_results_append(f"{fname}: ld '{en}' sig", q.get_data_sig_arr(ld[i], q.RngState(), 4))
 
 
-def auto_contract_pipi_vev_pos_avg(job_tag, traj, pipi_avg, get_get_prop, get_psel_prob, get_fsel_prob):
+def auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-pos-avg/traj-{traj}/pipi_vev_pos_avg.lat"
+    fn = f"{job_tag}/auto-contract-pipi-pos-avg-t/traj-{traj}/pipi_vev_pos_avg.lat"
     if get_load_path(fn) is not None:
         return
 
-    cexpr = get_cexpr_pipi_vac_pos_avg(pipi_avg)
+    cexpr = get_cexpr_pipi_vac_pos_avg()
     expr_names = get_expr_names(cexpr)
     total_site = q.Coordinate(get_param(job_tag, "total_site"))
     x_size = total_site[0]
@@ -893,13 +893,13 @@ def auto_contract_pipi_vev_pos_avg(job_tag, traj, pipi_avg, get_get_prop, get_ps
 
             values += val/prob
 
-        return values, x_rel
+        return values, x_rel, t_src
 
     def sum_function_avg(val_list):
-        values = np.zeros((x_size//2+1, y_size//2+1, z_size//2+1, len(expr_names),),dtype=np.complex128)
-        for val, x_rel in val_list:
-            values[abs(x_rel[0]), abs(x_rel[1]), abs(x_rel[2])] += val
-        return values.transpose(3,0,1,2)
+        values = np.zeros((x_size//2+1, y_size//2+1, z_size//2+1,t_size, len(expr_names),),dtype=np.complex128)
+        for val, x_rel, t_src in val_list:
+            values[abs(x_rel[0]), abs(x_rel[1]), abs(x_rel[2]),t_src] += val
+        return values.transpose(4,0,1,2,3)
 
     res_sum_avg = q.parallel_map_sum(feval_single, load_data_single(), sum_function=sum_function_avg, chunksize=1)
     res_sum_avg = q.glb_sum(res_sum_avg)
@@ -917,7 +917,7 @@ def auto_contract_pipi_vev_pos_avg(job_tag, traj, pipi_avg, get_get_prop, get_ps
         ["x_rel", x_size//2+1, [str(x) for x in range(x_size//2+1)],],
         ["y_rel", y_size//2+1, [str(y) for y in range(y_size//2+1)],],
         ["z_rel", z_size//2+1, [str(z) for z in range(z_size//2+1)],],
-        #["t_src", t_size, [str(t) for t in range(t_size)],],
+        ["t_src", t_size, [str(t) for t in range(t_size)],],
         ])
     ld.from_numpy(res_sum_avg)
     ld.save(get_save_path(fn))
@@ -929,7 +929,7 @@ def auto_contract_pipi_vev_pos_avg(job_tag, traj, pipi_avg, get_get_prop, get_ps
 
 def auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-dc-sub/traj-{traj}/pipi_vev_pos.lat"
+    fn = f"{job_tag}/auto-contract-pipi-sub-abs/traj-{traj}/pipi_vev_pos.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -983,6 +983,7 @@ def auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop, get_psel_prob, g
     def feval_single(args): 
         pidx = args
         xg_src = q.Coordinate(xg_psel_arr[pidx])
+
         t_src = xg_src[3]
         prob_src = psel_prob_arr[pidx]
 
@@ -1003,7 +1004,13 @@ def auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop, get_psel_prob, g
                     "pipi_op_dis_4d_sqr_limit": pipi_op_dis_4d_sqr_limit,
                     }
 
+
             val = eval_cexpr(cexpr, positions_dict=pd, get_prop=get_prop)
+
+        
+            #q.displayln_info(f"DEBUG: Subtracted bubble value: {val[1]}")
+
+            q.displayln_info(f"DEBUG: unsubtracted bubble value: {val[2] - val[1]}")
 
             values += val/prob
 
@@ -1378,7 +1385,7 @@ def run_auto_contraction(
         get_fsel_prob,
         ):
     fname = q.get_fname()
-    fn_checkpoint = f"{job_tag}/auto-contract-I0D5-p/traj-{traj}/checkpoint.txt"
+    fn_checkpoint = f"{job_tag}/auto-contract-pipi-pos-avg-t/traj-{traj}/checkpoint.txt"
     if get_load_path(fn_checkpoint) is not None:
         q.displayln_info(0, f"{fname}: '{fn_checkpoint}' exists.")
         return
@@ -1401,10 +1408,10 @@ def run_auto_contraction(
     #auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
     
     #pipi contraction functions
-    auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob) 
-    #auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob) 
+    #auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob) 
+    auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
     #auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob)
-    auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    #auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
 
     #ATW 3pt function
     #auto_contract_ATW3pt_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
@@ -1518,7 +1525,7 @@ def run_job_contraction(job_tag, traj):
         #
     #
     fns_produce = [
-            f"{job_tag}/auto-contract-I0D5-p/traj-{traj}/checkpoint.txt",
+            f"{job_tag}/auto-contract-pipi-pos-avg-t/traj-{traj}/checkpoint.txt",
             #
             ]
     fns_need = [
@@ -1597,7 +1604,7 @@ def run_job_contraction(job_tag, traj):
    # benchmark_eval_cexpr(get_cexpr_pipi_corr_psnk_psrc())
 
 ### ------
-set_param("48I", "traj_list")(list(range(1005,1096,10)) + list(range(2075,2176,10))) #list(range(1102,1492,10)) + list(range(1505, 1636, 10)) + list(range(1705, 2116,10)) + list(range(1005, 1096, 10)))
+set_param("48I", "traj_list")(list(range(1865, 2176,10))) #list(range(1102,1492,10)) + list(range(1505, 1636, 10)) + list(range(1705, 2116,10)) + list(range(1005, 1096, 10)))
 set_param("48I", "measurement", "auto_contractor_chunk_size")(128)
 set_param("48I", "measurement", "meson_tensor_t_sep")(12)
 set_param("48I", "measurement", "pipi_op_t_sep")(5) #time separation between the two pions in a two pion operator. this is Delta
@@ -1669,7 +1676,7 @@ if __name__ == "__main__":
             q.clean_cache()
             try_gracefully_finish()
     k_count = 0
-    ncf = 1
+    ncf = 30
     for job_tag, traj in job_tag_traj_list:
         if is_performing_contraction:
             q.check_time_limit()
