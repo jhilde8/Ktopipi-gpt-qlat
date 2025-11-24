@@ -486,8 +486,12 @@ pipi_wave_function_mode_dict[1] = pipi_wave_function_mode_1
 pipi_wave_function_mode_dict[2] = pipi_wave_function_mode_2
 pipi_wave_function_mode_dict[3] = pipi_wave_function_mode_3
 
-fn_pipi_avg= "/home/jhildebrand28/ktopipi/analysis/pipi_avg_data.npy"
-pipi_avg_arr = np.load(fn_pipi_avg)
+#fn_pipi_avg= "/home/jhildebrand28/ktopipi/analysis/pipi_avg_data.npy"
+fn_pipi_avg = "/home/jhildebrand28/ktopipi/"
+pipi_avg_000 = np.load(fn_pipi_avg + "pi_000_avg.npy")
+pipi_avg_001 = np.load(fn_pipi_avg + "pi_001_avg.npy")
+pipi_avg_011 = np.load(fn_pipi_avg + "pi_011_avg.npy")
+pipi_avg_111 = np.load(fn_pipi_avg + "pi_111_avg.npy")
 
 def pipi_wave_function(p1, p2, mode, size, pipi_op_dis_4d_sqr_limit):
     p1_tag, c1 = p1
@@ -501,7 +505,34 @@ def pipi_wave_function(p1, p2, mode, size, pipi_op_dis_4d_sqr_limit):
     wf = pipi_wave_function_mode_dict[mode]
     return wf(c12, size, pipi_op_dis_4d_sqr_limit)
 
-def pipi_avg_sub(p1, p2, size):
+def pipi_avg_sub(p1, p2, size, mode):
+    p1_tag, c1 = p1
+    p2_tag, c2 = p2
+    c1 = q.Coordinate(c1)
+    c2 = q.Coordinate(c2)
+    c12 = q.smod_coordinate(c1-c2,size)
+    x_rel = c12[0]
+    y_rel = c12[1]
+    z_rel = c12[2]
+    #t_src = c1[3]
+
+    if mode == 0:
+        pipi_avg_arr = pipi_avg_000
+    elif mode == 1:
+        pipi_avg_arr = pipi_avg_001
+    elif mode == 2: 
+        pipi_avg_arr = pipi_avg_011
+    elif mode == 3:
+        pipi_avg_arr = pipi_avg_111
+    else:
+        print("invalid mode")
+
+    sub = pipi_avg_arr[abs(x_rel),abs(y_rel),abs(z_rel)]
+
+    #we want to pick out the data that we want from the averaged term based on the positions in pd. 
+    return sub
+
+def pipi_bubble_sub(p1,p2,size):
     p1_tag, c1 = p1
     p2_tag, c2 = p2
     c1 = q.Coordinate(c1)
@@ -511,11 +542,15 @@ def pipi_avg_sub(p1, p2, size):
     y_rel = c12[1]
     z_rel = c12[2]
 
-    sub = pipi_avg_arr[abs(x_rel),abs(y_rel),abs(z_rel)]
+    sub = pipi_avg_err[abs(x_rel), abs(y_rel), abs(z_rel)]
 
-    #we want to pick out the data that we want from the averaged term based on the positions in pd. 
-    return sub
+    bubble_sub = (mk_pipi_i0(p1,p2) - sub)
 
+    return bubble_sub
+
+#hopefully this makes the subtraction happen before the momentum projection
+def mk_subtracted_bubble(p1:str, p2:str, is_dagger=False):
+    return (mk_pipi_i0(p1, p2, is_dagger) - mk_fac(f"pipi_avg_sub(p1,p2,size)"))
 #-----
 #pipi expressions, vacuum and 2 point function
 
@@ -566,10 +601,19 @@ def get_cexpr_pipi_dc_sub():
         exprs = [
                 mk_fac(1)+f"1",
                 ]
-        for mode in [0]:
+        for mode in [0,1,2,3]:
             exprs += [
-                        mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
-                        * (mk_pipi_i0('x_1','x_2') - mk_fac(f"pipi_avg_sub(x_1,x_2,size)")) + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>",
+                        
+                    #we may have to define an operator representing the subtracted term, so that the momentum projection acts on the full term rather
+                    #than each term individually
+                        (mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('x_1','x_2')) - mk_fac(f"pipi_avg_sub(x_1,x_2,size,{mode})") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>",
+
+                        #mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
+                        #* mk_fac(f"pipi_bubble_sub(x_1,x_2,size)") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>, new1",
+
+                        #mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
+                        #* mk_subtracted_bubble('x_1','x_2') + f"wf({mode}) * (pipi_i0(-tsep) - <pipi>),new2", 
 
                         mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
                         * mk_pipi_i0('x_1','x_2') + f"wf_snk({mode}) * pipi_i0^dag(0)",
@@ -585,6 +629,7 @@ def get_cexpr_pipi_dc_sub():
     base_positions_dict = dict()
     base_positions_dict["pipi_wave_function"] = pipi_wave_function
     base_positions_dict["pipi_avg_sub"] = pipi_avg_sub
+    #base_positions_dict["pipi_bubble_sub"] = pipi_bubble_sub
     base_positions_dict["pipi_op_dis_4d_sqr_limit"] = 0.5 # default value, to be overrided by `pd`.
     return cache_compiled_cexpr(
             calc_cexpr,
@@ -718,7 +763,7 @@ def get_cexpr_pipi_corr_psnk_psrc():
 
 def auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-dc-sub/traj-{traj}/pipi_vev.lat"
+    fn = f"{job_tag}/auto-contract-pipi-dc-sub3/traj-{traj}/pipi_bubble_mom.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -929,7 +974,7 @@ def auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop, get_psel_prob, g
 
 def auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-sub-abs/traj-{traj}/pipi_vev_pos.lat"
+    fn = f"{job_tag}/auto-contract-pipi-dc-sub2/traj-{traj}/pipi_vev_pos.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -1385,7 +1430,7 @@ def run_auto_contraction(
         get_fsel_prob,
         ):
     fname = q.get_fname()
-    fn_checkpoint = f"{job_tag}/auto-contract-pipi-pos-avg-t/traj-{traj}/checkpoint.txt"
+    fn_checkpoint = f"{job_tag}/auto-contract-pipi-dc-sub3/traj-{traj}/checkpoint.txt"
     if get_load_path(fn_checkpoint) is not None:
         q.displayln_info(0, f"{fname}: '{fn_checkpoint}' exists.")
         return
@@ -1408,8 +1453,8 @@ def run_auto_contraction(
     #auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
     
     #pipi contraction functions
-    #auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob) 
-    auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
+    auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob) 
+    #auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
     #auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob)
     #auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
 
@@ -1525,7 +1570,7 @@ def run_job_contraction(job_tag, traj):
         #
     #
     fns_produce = [
-            f"{job_tag}/auto-contract-pipi-pos-avg-t/traj-{traj}/checkpoint.txt",
+            f"{job_tag}/auto-contract-pipi-dc-sub3/traj-{traj}/checkpoint.txt",
             #
             ]
     fns_need = [
@@ -1604,7 +1649,7 @@ def run_job_contraction(job_tag, traj):
    # benchmark_eval_cexpr(get_cexpr_pipi_corr_psnk_psrc())
 
 ### ------
-set_param("48I", "traj_list")(list(range(1865, 2176,10))) #list(range(1102,1492,10)) + list(range(1505, 1636, 10)) + list(range(1705, 2116,10)) + list(range(1005, 1096, 10)))
+set_param("48I", "traj_list")(list(range(1705,2006,10))) #list(range(1102,1492,10)) + list(range(1505, 1636, 10)) + list(range(1705, 2116,10)) + list(range(1005, 1096, 10)))
 set_param("48I", "measurement", "auto_contractor_chunk_size")(128)
 set_param("48I", "measurement", "meson_tensor_t_sep")(12)
 set_param("48I", "measurement", "pipi_op_t_sep")(5) #time separation between the two pions in a two pion operator. this is Delta
