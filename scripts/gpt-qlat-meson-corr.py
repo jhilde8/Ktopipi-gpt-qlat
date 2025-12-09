@@ -19,10 +19,9 @@ is_cython = not is_test()
 load_path_list[:] = [
         "results",
         #"qcddata",
-        #"/data1/qcddata2",
+        "/data1/qcddata2",
         #"/data1/qcddata3",
         #"/data2/qcddata3-prop",
-        "/direct/sdcc+lustre01/LQCD/jhildebra/psrc_props"
         ]
 
 #point source meson correlator
@@ -113,6 +112,7 @@ def get_cexpr_meson_corr_psnk_psrc():
                     mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
                     * mk_pi_p("x_2", True)    * mk_pi_p("x_1")
                     + f"wf({mode}) * pi+^dag(0) * pi+(-tsep)",
+                    ]
                     #
                    # mk_fac(f"wave_function(x_1,x_2, {mode}, size)")
                    # * mk_pi_m("x_2",True) * mk_pi_m("x_1")
@@ -177,7 +177,7 @@ def get_cexpr_meson_corr_psnk_psrc():
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-meson/traj-{traj}/meson_corr_mom.lat"
+    fn = f"{job_tag}/auto-contract-test/traj-{traj}/meson_corr_mom.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -208,18 +208,18 @@ def auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel
         xg_src = q.Coordinate(xg_psel_arr[pidx])
         prob_src = psel_prob_arr[pidx]
         values = np.zeros((total_site[3], len(expr_names),), dtype=np.complex128)
-        for idx in range(len(xg_fsel_arr)):
-            xg_snk = q.Coordinate(xg_fsel_arr[idx])
+        for idx in range(len(xg_psel_arr)):
+            xg_snk = q.Coordinate(xg_psel_arr[idx])
             if xg_snk == xg_src:
                 prob_snk = 1.0
             else:
-                prob_snk = fsel_prob_arr[idx]
+                prob_snk = psel_prob_arr[idx]
             prob = prob_src * prob_snk
             x_rel = q.smod_coordinate(xg_snk - xg_src, total_site)
             x_rel_t = x_rel[3]
             pd = {
                     "x_2" : ("point", xg_src.to_tuple(),),
-                    "x_1" : ("point-snk", xg_snk.to_tuple(),),
+                    "x_1" : ("point", xg_snk.to_tuple(),),
                     "size" : total_site,
                     }
             val = eval_cexpr(cexpr, positions_dict=pd, get_prop=get_prop)
@@ -435,7 +435,7 @@ def run_auto_contraction(
         get_fsel_prob,
         ):
     fname = q.get_fname()
-    fn_checkpoint = f"{job_tag}/auto-contract-meson/traj-{traj}/checkpoint.txt"
+    fn_checkpoint = f"{job_tag}/auto-contract-test/traj-{traj}/checkpoint.txt"
     if get_load_path(fn_checkpoint) is not None:
         q.displayln_info(0, f"{fname}: '{fn_checkpoint}' exists.")
         return
@@ -454,7 +454,7 @@ def run_auto_contraction(
    # if use_fsel_prop:
    #     auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
     
-    auto_contract_meson_corr_psnk_psrc_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    #auto_contract_meson_corr_psnk_psrc_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
     auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
     #auto_contract_meson_corr(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
     
@@ -568,7 +568,7 @@ def run_job_contraction(job_tag, traj):
         #
     #
     fns_produce = [
-            f"{job_tag}/auto-contract-meson/traj-{traj}/checkpoint.txt",
+            f"{job_tag}/auto-contract-test/traj-{traj}/checkpoint.txt",
             #
             ]
     fns_need = [
@@ -647,7 +647,7 @@ def get_all_cexpr():
    # benchmark_eval_cexpr(get_cexpr_pipi_corr_psnk_psrc())
 
 ### ------
-set_param("48I", "traj_list")(list(range(1102, 1493,10)))
+set_param("48I", "traj_list")([1102])
 set_param("48I", "measurement", "auto_contractor_chunk_size")(128)
 set_param("48I", "measurement", "meson_tensor_t_sep")(12)
 set_param("48I", "measurement", "pipi_op_t_sep")(5) #time separation between the two pions in a two pion operator. this is Delta
@@ -719,7 +719,7 @@ if __name__ == "__main__":
             q.clean_cache()
             try_gracefully_finish()
     k_count = 0
-    ncf = 25
+    ncf = 1
     for job_tag, traj in job_tag_traj_list:
         if is_performing_contraction:
             q.check_time_limit()

@@ -153,7 +153,7 @@ def get_cexpr_meson_corr_psnk_psrc():
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-I0D5-p/traj-{traj}/meson_corr_psnk_psrc_psel.lat"
+    fn = f"{job_tag}/auto-contract-test/traj-{traj}/meson_corr_psnk_psrc_mom.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -229,7 +229,7 @@ def auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-avg-pos/traj-{traj}/meson_corr_psnk_psrc_psel.lat"
+    fn = f"{job_tag}/auto-contract-test/traj-{traj}/meson_corr_psnk_psrc_pos.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -532,25 +532,6 @@ def pipi_avg_sub(p1, p2, size, mode):
     #we want to pick out the data that we want from the averaged term based on the positions in pd. 
     return sub
 
-def pipi_bubble_sub(p1,p2,size):
-    p1_tag, c1 = p1
-    p2_tag, c2 = p2
-    c1 = q.Coordinate(c1)
-    c2 = q.Coordinate(c2)
-    c12 = q.smod_coordinate(c1-c2,size)
-    x_rel = c12[0]
-    y_rel = c12[1]
-    z_rel = c12[2]
-
-    sub = pipi_avg_err[abs(x_rel), abs(y_rel), abs(z_rel)]
-
-    bubble_sub = (mk_pipi_i0(p1,p2) - sub)
-
-    return bubble_sub
-
-#hopefully this makes the subtraction happen before the momentum projection
-def mk_subtracted_bubble(p1:str, p2:str, is_dagger=False):
-    return (mk_pipi_i0(p1, p2, is_dagger) - mk_fac(f"pipi_avg_sub(p1,p2,size)"))
 #-----
 #pipi expressions, vacuum and 2 point function
 
@@ -609,12 +590,6 @@ def get_cexpr_pipi_dc_sub():
                         (mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
                         * mk_pipi_i0('x_1','x_2')) - mk_fac(f"pipi_avg_sub(x_1,x_2,size,{mode})") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>",
 
-                        #mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_fac(f"pipi_bubble_sub(x_1,x_2,size)") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>, new1",
-
-                        #mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_subtracted_bubble('x_1','x_2') + f"wf({mode}) * (pipi_i0(-tsep) - <pipi>),new2", 
-
                         mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
                         * mk_pipi_i0('x_1','x_2') + f"wf_snk({mode}) * pipi_i0^dag(0)",
 
@@ -629,7 +604,6 @@ def get_cexpr_pipi_dc_sub():
     base_positions_dict = dict()
     base_positions_dict["pipi_wave_function"] = pipi_wave_function
     base_positions_dict["pipi_avg_sub"] = pipi_avg_sub
-    #base_positions_dict["pipi_bubble_sub"] = pipi_bubble_sub
     base_positions_dict["pipi_op_dis_4d_sqr_limit"] = 0.5 # default value, to be overrided by `pd`.
     return cache_compiled_cexpr(
             calc_cexpr,
@@ -639,18 +613,22 @@ def get_cexpr_pipi_dc_sub():
             )
 
 def get_cexpr_pipi_vac_pos_avg():
-    fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_vev_pos_avg"
+    fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_phase_avg"
     def calc_cexpr():
         diagram_type_dict = dict()
 
         exprs = [
                 mk_fac(1)+f"1",
-
-                mk_pipi_i0('x_1','x_2') + f"pipi_i0(-tsep)",
-
-                mk_pipi_i0('x_1','x_2',True) + f"pipi_i0^dag(0)",
-
                 ]
+
+        for mode in [0,1,2,3]:
+            exprs += [
+                    
+                    mk_fac(f"pipi_wave_function(x_1,x_2,{mode},size,pipi_op_dis_4d_sqr_limit)")
+                    * mk_pipi_i0('x_1','x_2') + f"wf({mode}) * pipi_i0(-tsep)",
+
+                    #mk_pipi_i0('x_1','x_2',True) + f"pipi_i0^dag(0)",
+                     ]
         cexpr = contract_simplify_compile(
                 *exprs,
                 is_isospin_symmetric_limit=True,
@@ -666,6 +644,63 @@ def get_cexpr_pipi_vac_pos_avg():
             is_cython=is_cython,
             base_positions_dict=base_positions_dict,
             )
+
+@q.timer
+def get_cexpr_pipi_vac_psnk_psrc():
+    fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_V"
+    def calc_cexpr():
+        diagram_type_dict = dict() #the auto contractor deals with each term within each type, along with prefactors present in the sum.
+        diagram_type_dict[()] = 'ADT0'
+        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'snk_1'), 1), (('src_1', 'src_2'), 1), (('src_2', 'src_1'), 1))] = 'ADT1'
+        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'snk_1'), 1))] = 'ADT5_snk'
+        diagram_type_dict[((('src_1', 'src_2'), 1), (('src_2', 'src_1'), 1))] = 'ADT5_src'
+        exprs = [
+                mk_fac(1) + f"1",
+                ]
+        for mode_src in [0, 1, 2, 3]:
+            for mode_snk in [0, 1, 2, 3]:
+                exprs += [
+                        
+                        (mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0("snk_1", "snk_2", True)
+                        * mk_pipi_i0("src_1", "src_2")
+                        + f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i00^dag(0) * pipi_i00(-tsep)",'ADT1'),
+
+                        #(mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
+                        #* mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        #* (mk_pipi_i0('snk_1','snk_2',True) - mk_fac(f"pipi_avg_sub(snk_1,snk_2,size)"))
+                        #* (mk_pipi_i0('src_1','src_2') - mk_fac(f"pipi_avg_sub(src_1,src_2,size)"))
+                        #+ f"wf_snk({mode_snk}) * wf_src({mode_src}) * (pipi_i00^dag(0) - <pipi_i0>) * (pipi_i00(-tsep) - <pipi_i0>)",
+                        # ['ADT0','ADT1','ADT5_snk','ADT5_src']),
+
+                        (((mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('snk_1','snk_2',True)) - mk_fac(f"pipi_avg_sub(snk_1,snk_2,size,{mode_snk})"))
+                        * ((mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('src_1','src_2')) - mk_fac(f"pipi_avg_sub(src_1,src_2,size,{mode_src})"))
+                        + f"wf_snk({mode_snk}) * wf_src({mode_src}) * (pipi_i00^dag(0) - <pipi_i0>) * (pipi_i00(-tsep) - <pipi_i0>)",
+                         ['ADT0','ADT1','ADT5_snk','ADT5_src']),
+
+                        ]
+
+
+        cexpr = contract_simplify_compile(
+                *exprs,
+                is_isospin_symmetric_limit=True,
+                diagram_type_dict=diagram_type_dict,
+                )
+        return cexpr
+    base_positions_dict = dict()
+    base_positions_dict["pipi_wave_function"] = pipi_wave_function
+    base_positions_dict["pipi_avg_sub"] = pipi_avg_sub
+    base_positions_dict["pipi_op_dis_4d_sqr_limit"] = 0.5 # default value, to be overrided by `pd`.
+    return cache_compiled_cexpr(
+            calc_cexpr,
+            fn_base,
+            is_cython=is_cython,
+            base_positions_dict=base_positions_dict,
+            )
+
 
 @q.timer
 def get_cexpr_pipi_corr_psnk_psrc():
@@ -763,12 +798,12 @@ def get_cexpr_pipi_corr_psnk_psrc():
 
 def auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-dc-sub3/traj-{traj}/pipi_bubble_mom.lat"
+    fn = f"{job_tag}/auto-contract-I0D1/traj-{traj}/pipi_vev.lat"
     if get_load_path(fn) is not None:
         return
 
-    #cexpr = get_cexpr_pipi_vac()
-    cexpr = get_cexpr_pipi_dc_sub()
+    cexpr = get_cexpr_pipi_vac()
+    #cexpr = get_cexpr_pipi_dc_sub()
     expr_names = get_expr_names(cexpr)
     total_site = q.Coordinate(get_param(job_tag, "total_site"))
     t_size = total_site[3]
@@ -824,6 +859,7 @@ def auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob,
         for pidx_src_2 in pidx_list_list[t_src_2]:
             xg_src_2 = q.Coordinate(xg_psel_arr[pidx_src_2])
             prob = psel_prob_arr[pidx_src_2] * psel_prob_arr[pidx]
+            x_rel = q.smod_coordinate(xg_src_2 - xg_src, total_site)
 
             pd = {
                     "x_1": ("point", xg_src.to_tuple(),),
@@ -860,7 +896,7 @@ def auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob,
 
 def auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-pos-avg-t/traj-{traj}/pipi_vev_pos_avg.lat"
+    fn = f"{job_tag}/auto-contract-pipi-phase-avg/traj-{traj}/pipi_vev_pos_avg.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -949,13 +985,6 @@ def auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop, get_psel_prob, g
     res_sum_avg = q.parallel_map_sum(feval_single, load_data_single(), sum_function=sum_function_avg, chunksize=1)
     res_sum_avg = q.glb_sum(res_sum_avg)
     res_sum_avg *= 1.0 #/ (t_size * (total_volume / t_size)) #normalization. change as needed.
-   
-    #constructs the average vev with the data we just global summed
-    #counter = res_sum_avg[0,:,:,:]
-    #mask = counter != 0
-    #avg_pipi = np.zeros((len(expr_names), x_size//2+1, y_size//2+1, z_size//2+1),dtype=np.complex128)
-
-    #avg_pipi[:,mask] = res_sum_avg[:,mask]/counter[mask] 
 
     ld = q.mk_lat_data([
         ["expr_name", len(expr_names), expr_names,],
@@ -1055,7 +1084,7 @@ def auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop, get_psel_prob, g
         
             #q.displayln_info(f"DEBUG: Subtracted bubble value: {val[1]}")
 
-            q.displayln_info(f"DEBUG: unsubtracted bubble value: {val[2] - val[1]}")
+            q.displayln_info(f"DEBUG: unsubtracted bubble value: {val[2] - val[1]} \n subtracted bubble value: {val[1]} \n pipi")
 
             values += val/prob
 
@@ -1091,10 +1120,12 @@ def auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop, get_psel_prob, g
 @q.timer(is_timer_fork=True)
 def auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-I0D5-p/traj-{traj}/pipi_corr_psnk_psrc.lat"
+    fn = f"{job_tag}/auto-contract-I0D1/traj-{traj}/pipi_corr_psnk_psrc.lat" 
+    #fn = f"{job_tag}/auto-contract-pipi-V/traj-{traj}/vac_corr_psnk_psrc.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_pipi_corr_psnk_psrc()
+    #cexpr = get_cexpr_pipi_vac_psnk_psrc()
     expr_names = get_expr_names(cexpr)
     total_site = q.Coordinate(get_param(job_tag, "total_site"))
     t_size = total_site[3]
@@ -1430,7 +1461,7 @@ def run_auto_contraction(
         get_fsel_prob,
         ):
     fname = q.get_fname()
-    fn_checkpoint = f"{job_tag}/auto-contract-pipi-dc-sub3/traj-{traj}/checkpoint.txt"
+    fn_checkpoint = f"{job_tag}/auto-contract-I0D1/traj-{traj}/checkpoint.txt"
     if get_load_path(fn_checkpoint) is not None:
         q.displayln_info(0, f"{fname}: '{fn_checkpoint}' exists.")
         return
@@ -1456,7 +1487,7 @@ def run_auto_contraction(
     auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob) 
     #auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
     #auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob)
-    #auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
 
     #ATW 3pt function
     #auto_contract_ATW3pt_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
@@ -1570,7 +1601,7 @@ def run_job_contraction(job_tag, traj):
         #
     #
     fns_produce = [
-            f"{job_tag}/auto-contract-pipi-dc-sub3/traj-{traj}/checkpoint.txt",
+            f"{job_tag}/auto-contract-I0D1/traj-{traj}/checkpoint.txt",
             #
             ]
     fns_need = [
@@ -1649,7 +1680,7 @@ def run_job_contraction(job_tag, traj):
    # benchmark_eval_cexpr(get_cexpr_pipi_corr_psnk_psrc())
 
 ### ------
-set_param("48I", "traj_list")(list(range(1705,2006,10))) #list(range(1102,1492,10)) + list(range(1505, 1636, 10)) + list(range(1705, 2116,10)) + list(range(1005, 1096, 10)))
+set_param("48I", "traj_list")(list(range(1102,1493,10))) #list(range(1102,1492,10)) + list(range(1505, 1636, 10)) + list(range(1705, 2116,10)) + list(range(1005, 1096, 10)))
 set_param("48I", "measurement", "auto_contractor_chunk_size")(128)
 set_param("48I", "measurement", "meson_tensor_t_sep")(12)
 set_param("48I", "measurement", "pipi_op_t_sep")(5) #time separation between the two pions in a two pion operator. this is Delta
