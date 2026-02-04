@@ -22,3 +22,6 @@ analysis/sub_compare.pdf
 analysis/sub_compare_zoom.pdf
 analysis/sub_nosub_compare.pdf
 bubble_subtract_test.ipynb
+analysis/__pycache__/
+corr_utils/__pycache__/
+

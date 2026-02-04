@@ -48,19 +48,10 @@ def wave_function_mode_000(xrel,yrel,zrel,NS):
 #constructs the Fourier component for the (0,0,0) momentum config. 
 #inputs are relative coordinates. 
 def wave_function_mode_001_f(xrel,yrel,zrel,NS):
-    w1 = np.exp(-1j*(2.0 * np.pi * xrel / NS))
-    #w2 = np.exp(-1j*(2.0 * np.pi * yrel / NS))
-    #w3 = np.exp(-1j*(2.0 * np.pi * zrel / NS))
-    #w = (w1 + w2 + w3)/3.0
-    #w1 = np.exp(-1j * (2.0 * np.pi * xrel / NS))
-    return w1
-
-def wave_function_mode_001_b(xrel,yrel,zrel,NS):
-    w1 = np.exp(1j*(2.0 * np.pi * xrel / NS))
-    #w2 = np.exp(1j*(2.0 * np.pi * yrel / NS))
-    #w3 = np.exp(1j*(2.0 * np.pi * zrel / NS))
-    #w = (w1 + w2 + w3)/3.0
-    #w1 = np.exp(1j * (2.0 * np.pi * xrel / NS))
+    w1 = np.cos((2.0 * np.pi * xrel / NS))
+    w2 = np.cos((2.0 * np.pi * yrel / NS))
+    w3 = np.cos((2.0 * np.pi * zrel / NS))
+    w = (w1 + w2 + w3)/3.0
     return w1
 
 def wave_function_mode_011(xrel,yrel,zrel,NS):
@@ -75,18 +66,6 @@ def wave_function_mode_011(xrel,yrel,zrel,NS):
     w = (w1 + w2 + w3 + w4 + w5 + w6)/6.0
     return w
 
-def wave_function_mode_011_f(xrel,yrel,zrel,NS):
-    w1 = np.exp(-1j* ((2.0 * np.pi * xrel / NS) + (2.0 * np.pi * yrel / NS)))
-    
-    #w = (w1 + w2 + w3 + w4 + w5 + w6)/6.0
-    return w1
-
-def wave_function_mode_011_b(xrel,yrel,zrel,NS):
-    w1 = np.exp(1j* ((2.0 * np.pi * xrel / NS) + (2.0 * np.pi * yrel / NS)))
-    
-    #w = (w1 + w2 + w3 + w4 + w5 + w6)/6.0
-    return w1
-
 def wave_function_mode_111(xrel,yrel,zrel,NS):
     w1 = np.cos((2.0 * np.pi * xrel / NS) + (2.0 * np.pi * yrel / NS) + (2.0 * np.pi * zrel / NS))
     w2 = np.cos(-(2.0 * np.pi * xrel / NS) + (2.0 * np.pi * yrel / NS) + (2.0 * np.pi * zrel / NS))
@@ -95,18 +74,6 @@ def wave_function_mode_111(xrel,yrel,zrel,NS):
     
     w = (w1 + w2 + w3 + w4)/4.0
     return w
-
-def wave_function_mode_111_f(xrel,yrel,zrel,NS):
-    w1 = np.exp(-1j*((2.0 * np.pi * xrel / NS) + (2.0 * np.pi * yrel / NS) + (2.0 * np.pi * zrel / NS)))
-    
-    #w = (w1 + w2 + w3 + w4)/4.0
-    return w1
-
-def wave_function_mode_111_b(xrel,yrel,zrel,NS):
-    w1 = np.exp(1j*((2.0 * np.pi * xrel / NS) + (2.0 * np.pi * yrel / NS) + (2.0 * np.pi * zrel / NS)))
-    
-    #w = (w1 + w2 + w3 + w4)/4.0
-    return w1
 
 #pos_corr will have shape (ncf, NS, NS, NS, NT)
 def mom_project(pos_corr):
@@ -141,6 +108,46 @@ def mom_project(pos_corr):
             
 
     return mom_corr
+
+#momentum projection for a folded or forward correlator.
+def mom_project_half(pos_corr,count_corr,mode):
+    Ncf,Nx,Ny,Nz,Nt = pos_corr.shape #extent in each direction
+    x,y,z = np.meshgrid(np.arange(Nx),np.arange(Ny),np.arange(Nz))
+    #x,y,z = np.meshgrid(np.arange(Nx),np.arange(Ny),np.arange(Nz))
+    
+    if mode == 0:
+        ph = wave_function_mode_000(x,y,z,Nx*2-2)
+    elif mode == 1:
+        ph = wave_function_mode_001(x,y,z,Nx*2-2)
+    elif mode == 2:
+        ph = wave_function_mode_011(x,y,z,Nx*2-2)
+    elif mode == 3:
+        ph = wave_function_mode_111(x,y,z,Nx*2-2)
+
+    #M = np.ones_like(pos_corr[0,:,:,:,:],dtype=int)
+    M = np.ones_like(x,dtype=int)
+    M = M * (2 - (x==0).astype(int) - (x==24).astype(int))
+    M = M * (2 - (y==0).astype(int) - (y==24).astype(int))
+    M = M * (2 - (z==0).astype(int) - (z==24).astype(int))
+    
+    mom_corr = np.zeros((Ncf,Nt), np.float64)
+
+    for cf in range(Ncf):
+    #sum over spatial points for each timeslice
+        for t in range(Nt):
+            pos_arr = pos_corr[cf,:,:,:,t]
+            count_arr = count_corr[cf,:,:,:,t]
+            #mult = M[:,:,:,t]
+            #if mode != 0:
+            #    phase = ph[:,:,:,t]
+            #else:
+            #    phase = ph
+            mom_corr[cf,t] = np.sum((M * ph * pos_arr),axis=(0,1,2))
+
+    #mom_corr *= ((25*25*25*49)/(48*48*48*96))
+
+    return mom_corr
+
 
 
 #from corr data saved in terms of tsrc and tsnk, this creates a corr in terms of tsep. 
@@ -260,5 +267,29 @@ def pipi_type_sum(D_data, C_data, R_data=None, V_data=None, isospin=2):
 
     return corr_sum
 
+#traditional vacuum subtraction function,calculates the subtraction term. 
+def sub_term(Cvev1_jk, Cvev2_jk,Delta):
+    nblks = Cvev1_jk.shape[0]
+    t_size = Cvev1_jk.shape[-1]
+    print(Cvev1_jk.shape)
+    print(Cvev2_jk.shape)
+
+    S = np.zeros((nblks,t_size),dtype=np.complex128) #this will hold the full subtraction term for each jackknife block
+    for jk in range(nblks):
+        for tsep in range(t_size):
+            s = 0.0
+            for tsrc in range(t_size):
+                t_1 = (tsep + tsrc + Delta) % t_size
+                s += Cvev1_jk[jk, t_1] * Cvev2_jk[jk,tsrc]
+
+            S[jk,tsep] = s/t_size
+            #print(S[tsep])
+
+    #subtraction term should be very constant
+    sub_std = np.std(S[:])
+    print(f"Subtraction term standard deviation: {sub_std}")
+    #assert sub_std < 1e-6, "Subtraction term not constant, standard deviation greater than 1e-6"
+            
+    return S
 
 
