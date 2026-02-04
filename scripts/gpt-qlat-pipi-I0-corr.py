@@ -100,22 +100,90 @@ def wave_function_mode_3(c12, size):
 
 #---------------
 
+def jack_arr_to_dict(jack_arr,op):
+    ens_48I_ntraj = 113
+    
+    #first we map the trajectory numbers to indices this is specific to 48I
+    traj_list = list(range(1102,1493,10)) + list(range(1505,1636,10)) + list(range(1705,2026,10)) + [2045,2055,2065] + list(range(2085,2176,10)) + list(range(1005,1096,10)) + [975,985,995]
+
+    assert len(traj_list) == ens_48I_ntraj
+
+    #fill nested dict with the spatial data, using the trajectory and momentum mode as keys
+    if op == 'pipi':
+        vev_dict = {
+                traj_num: {
+                    mode: jack_arr[i,mode,...] for mode in range(4)
+                } 
+            for i,traj_num in enumerate(traj_list)
+        }
+
+    elif op == 'sigma':
+        vev_dict = {
+            traj_num: jack_arr[i,:] for i,traj_num in enumerate(traj_list)
+        }
+    
+    return vev_dict
+
+# load in data for the improved subtraction
+fn_pipi_avg = "/home/jhildebrand28/ktopipi/"
+
+sigma_vev_jks= np.load(fn_pipi_avg + "sigma_jks.npy")
+
+sigma_avg_dict = jack_arr_to_dict(sigma_vev_jks, op ='sigma')
+
+sigma_avg = np.load(fn_pipi_avg + "sigma_avg.npy")
+
+sigma_const_avg = np.load(fn_pipi_avg + "sig_const_avg.npy")
+
+#subtraction by jackknife blocks
+def sigma_avg_jk_sub(p1):
+    p1_tag,c1 = p1
+    c1 = q.Coordinate(c1)
+    t = c1[3]
+
+    sub = sigma_avg_dict[traj][t]
+
+    return sub
+
+#average over spatial coordinates
+def sigma_avg_sub(p1):
+    p1_tag,c1=p1
+    c1 = q.Coordinate(c1)
+    t = c1[3]
+
+    sub = sigma_avg[t]
+    return sub
+
+#full average
+def sigma_const_sub():
+    sub = sigma_const_avg
+    return sub
+
 #---------------
 #point source meson expressions
 
 @q.timer
 def get_cexpr_meson_corr_psnk_psrc():
-    fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_pos_psnk_psrc"
+    fn_base = "cache/auto_contract_cexpr/get_cexpr_meson_psnk_psrc"
     def calc_cexpr():
         diagram_type_dict = dict()
-        #diagram_type_dict[((('x_1', 'x_2'), 1), (('x_2', 'x_1'), 1))] = 'Type1'
-        #diagram_type_dict[((('x_1', 'x_1'), 1), (('x_2', 'x_2'), 1))] = 'Type2'
+        diagram_type_dict[()] = 'ADT0'
+        diagram_type_dict[((('x_1', 'x_1'), 1),)] = 'ADT1'
+        diagram_type_dict[((('x_2', 'x_2'), 1),)] = 'ADT2'
+        diagram_type_dict[((('x_1', 'x_2'), 1), (('x_2', 'x_1'), 1))] = 'Type1'
+        diagram_type_dict[((('x_1', 'x_1'), 1), (('x_2', 'x_2'), 1))] = 'Type2'
+        #diagram_type_dict[(('x_1', 'x_1'), 1),] = 'Type2_src'
+        #diagram_type_dict[(('x_2', 'x_2'), 1),] = 'Type2_snk'
         exprs = [
                 mk_fac(1) + f"1",
 
-                mk_pipi_i0('x_1','x_2') + f"pipi_i0(-tsep)",
+                mk_k_0("x_2",True) * mk_k_0("x_1") + f"K_0^dag(0) * K_0(-tsep)",
 
-                mk_pipi_i0('x_1','x_2',True) + f"pipi_i0^dag(0)",
+                mk_pi_p("x_2",True) * mk_pi_p("x_1") + f"pi+(0) * pi+(-tsep)",
+
+                #mk_pipi_i0('x_1','x_2') + f"pipi_i0(-tsep)",
+
+                #mk_pipi_i0('x_1','x_2',True) + f"pipi_i0^dag(0)",
 
                 #(mk_sigma("x_2",True) * mk_sigma("x_1")
                 #    + f"wf(0) * sigma^dag(0) * sigma_0(-tsep)",'Type1'),
@@ -126,6 +194,19 @@ def get_cexpr_meson_corr_psnk_psrc():
                 #mk_sigma("x_2",True) * mk_sigma("x_1")
                 #    + f"wf(0) * sigma^dag(0) * sigma(-tsep)",
             
+
+                #((mk_sigma('x_2',True) - mk_fac(f"sigma_const_sub()")) 
+                #*(mk_sigma('x_1') - mk_fac(f"sigma_const_sub()")) 
+                #+ f"(sigma(-tsep) - <sigma>) * (sigma(0)^dag - <sigma_const>)"), # ,['ADT0','ADT1','ADT2','Type2'])
+
+                #((mk_sigma('x_2',True) - mk_fac(f"sigma_avg_jk_sub(x_2)")) 
+                #*(mk_sigma('x_1') - mk_fac(f"sigma_avg_jk_sub(x_1)")) 
+                #+ f"(sigma(-tsep) - <sigma>) * (sigma(0)^dag - <sigma_jk>)"), #,['ADT0','ADT1','ADT2','Type2'])
+                
+                #((mk_sigma('x_2',True) - mk_fac(f"sigma_avg_sub(x_2)")) 
+                #*(mk_sigma('x_1') - mk_fac(f"sigma_avg_sub(x_1)")) 
+                #+ f"(sigma(-tsep) - <sigma>) * (sigma(0)^dag - <sigma_avg>)"), #,['ADT0','ADT1','ADT2','Type2'])
+                
                 #mk_sigma("x_2",True) + f"sigma^dag(0)",
                 #mk_sigma("x_1") + f"sigma(-tsep)",
 
@@ -140,6 +221,9 @@ def get_cexpr_meson_corr_psnk_psrc():
         return cexpr
     base_positions_dict = dict()
     #base_positions_dict["wave_function"] = wave_function
+    base_positions_dict["sigma_avg_sub"] = sigma_avg_sub
+    base_positions_dict["sigma_avg_jk_sub"] = sigma_avg_jk_sub
+    base_positions_dict["sigma_const_sub"] = sigma_const_sub
     return cache_compiled_cexpr(
             calc_cexpr,
             fn_base,
@@ -486,12 +570,6 @@ pipi_wave_function_mode_dict[1] = pipi_wave_function_mode_1
 pipi_wave_function_mode_dict[2] = pipi_wave_function_mode_2
 pipi_wave_function_mode_dict[3] = pipi_wave_function_mode_3
 
-#fn_pipi_avg= "/home/jhildebrand28/ktopipi/analysis/pipi_avg_data.npy"
-fn_pipi_avg = "/home/jhildebrand28/ktopipi/"
-pipi_avg_000 = np.load(fn_pipi_avg + "pi_000_avg.npy")
-pipi_avg_001 = np.load(fn_pipi_avg + "pi_001_avg.npy")
-pipi_avg_011 = np.load(fn_pipi_avg + "pi_011_avg.npy")
-pipi_avg_111 = np.load(fn_pipi_avg + "pi_111_avg.npy")
 
 def pipi_wave_function(p1, p2, mode, size, pipi_op_dis_4d_sqr_limit):
     p1_tag, c1 = p1
@@ -505,6 +583,45 @@ def pipi_wave_function(p1, p2, mode, size, pipi_op_dis_4d_sqr_limit):
     wf = pipi_wave_function_mode_dict[mode]
     return wf(c12, size, pipi_op_dis_4d_sqr_limit)
 
+#-----------------------------------------------------
+# load in data for the improved subtraction
+fn_pipi_avg = "/home/jhildebrand28/ktopipi/analysis/"
+
+#pipi_vev_jks = np.load(fn_pipi_avg + "pi_vev_jks_D3.npy") #shape (113,4,25,25,25)
+
+#pipi_vev_jks_t = np.load(fn_pipi_avg + "pi_vev_jks_t_D5.npy") #shape (113,4,25,25,25,96)
+
+#pipi_vev_t = np.load(fn_pipi_avg + "pi_vev_avg_t_D5.npy") #shape (4,25,25,25,96)
+
+pipi_vev = np.load(fn_pipi_avg + "pi_vev_avg_D3.npy") #shape (4,25,25,25)
+
+#pipi_avg_dict = jack_arr_to_dict(pipi_vev_jks,   op = 'pipi')
+
+#pipi_avg_dict_t = jack_arr_to_dict(pipi_vev_jks_t, op = 'pipi')
+
+
+def pipi_avg_jk_sub(p1, p2, size, mode):
+    p1_tag, c1 = p1
+    p2_tag, c2 = p2
+    c1 = q.Coordinate(c1)
+    c2 = q.Coordinate(c2)
+    c12 = q.smod_coordinate(c1-c2,size)
+    x_rel = c12[0]
+    y_rel = c12[1]
+    z_rel = c12[2]
+    t_src = c1[3] #suspect
+
+
+    if mode > 3 or mode < 0:
+        q.displayln_info(-1,f"ERROR: invalid momentum mode")
+
+    #q.displayln_info(f"DEBUG: jk time=0 if statement entered, time={t1}")
+    #pipi_avg_dict is a dictionary filled with our (25,25,25) averaged data, keyed by trajectory and momentum mode.
+    pipi_avg_arr = pipi_avg_dict[traj][mode]
+
+    return pipi_avg_arr[abs(x_rel),abs(y_rel),abs(z_rel)]
+
+
 def pipi_avg_sub(p1, p2, size, mode):
     p1_tag, c1 = p1
     p2_tag, c2 = p2
@@ -514,25 +631,18 @@ def pipi_avg_sub(p1, p2, size, mode):
     x_rel = c12[0]
     y_rel = c12[1]
     z_rel = c12[2]
-    #t_src = c1[3]
+    
+    #this should always be the first term, the second source and sink are calculated such that the actual tsep is between the first source and sink. 
+    t_src = c1[3]
 
-    if mode == 0:
-        pipi_avg_arr = pipi_avg_000
-    elif mode == 1:
-        pipi_avg_arr = pipi_avg_001
-    elif mode == 2: 
-        pipi_avg_arr = pipi_avg_011
-    elif mode == 3:
-        pipi_avg_arr = pipi_avg_111
-    else:
-        print("invalid mode")
+    if mode > 3 or mode < 0:
+        q.displayln_info(-1,f"ERROR: invalid momentum mode")
 
-    sub = pipi_avg_arr[abs(x_rel),abs(y_rel),abs(z_rel)]
+    #q.displayln_info(f"DEBUG: time==0 if statement entered, time={t2}")
+    return pipi_vev[mode, abs(x_rel),abs(y_rel),abs(z_rel)]
 
-    #we want to pick out the data that we want from the averaged term based on the positions in pd. 
-    return sub
 
-#-----
+#-------------------------------------------------------
 #pipi expressions, vacuum and 2 point function
 
 @q.timer
@@ -544,9 +654,9 @@ def get_cexpr_pipi_vac():
         exprs = [
                 mk_fac(1)+f"1",
 
-                mk_sigma('x_1') + f"sigma(-tsep)",
+                #mk_sigma('x_1') + f"sigma(-tsep)",
 
-                mk_sigma('x_1',True) + f"sigma^dag(0)",
+                #mk_sigma('x_1',True) + f"sigma^dag(0)",
                 ]
         for mode in [0,1,2,3]:
             exprs += [
@@ -574,6 +684,7 @@ def get_cexpr_pipi_vac():
             )
  
 @q.timer
+#this works for the subtraction. This calculates one bubble at a time, leaving the temporal correlation for the analysis. 
 def get_cexpr_pipi_dc_sub():
     fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_dc_sub"
     def calc_cexpr():
@@ -581,6 +692,11 @@ def get_cexpr_pipi_dc_sub():
 
         exprs = [
                 mk_fac(1)+f"1",
+                
+                #mk_sigma('x_1') + f"sigma(-tsep)",
+
+                #mk_sigma('x_1') - mk_fac(f"sigma_avg_sub(x_1)") + f"sigma(-tsep) - <sigma>",
+
                 ]
         for mode in [0,1,2,3]:
             exprs += [
@@ -589,6 +705,9 @@ def get_cexpr_pipi_dc_sub():
                     #than each term individually
                         (mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
                         * mk_pipi_i0('x_1','x_2')) - mk_fac(f"pipi_avg_sub(x_1,x_2,size,{mode})") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>",
+
+                        (mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('x_1','x_2')) - mk_fac(f"pipi_avg_t_sub(x_1,x_2,size,{mode})") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi_t>",
 
                         mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
                         * mk_pipi_i0('x_1','x_2') + f"wf_snk({mode}) * pipi_i0^dag(0)",
@@ -604,6 +723,8 @@ def get_cexpr_pipi_dc_sub():
     base_positions_dict = dict()
     base_positions_dict["pipi_wave_function"] = pipi_wave_function
     base_positions_dict["pipi_avg_sub"] = pipi_avg_sub
+    base_positions_dict["pipi_avg_t_sub"] = pipi_avg_t_sub
+    base_positions_dict["sigma_avg_sub"] = sigma_avg_sub
     base_positions_dict["pipi_op_dis_4d_sqr_limit"] = 0.5 # default value, to be overrided by `pd`.
     return cache_compiled_cexpr(
             calc_cexpr,
@@ -650,36 +771,60 @@ def get_cexpr_pipi_vac_psnk_psrc():
     fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_V"
     def calc_cexpr():
         diagram_type_dict = dict() #the auto contractor deals with each term within each type, along with prefactors present in the sum.
-        diagram_type_dict[()] = 'ADT0'
+        diagram_type_dict[()] = 'ADT0' #constant
+        diagram_type_dict[((('src_1', 'src_1'), 1),)] = 'ADT4_src' #sigma bubble terms
+        diagram_type_dict[((('snk_1', 'snk_1'), 1),)] = 'ADT4_snk'
         diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'snk_1'), 1), (('src_1', 'src_2'), 1), (('src_2', 'src_1'), 1))] = 'ADT1'
-        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'snk_1'), 1))] = 'ADT5_snk'
+        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'snk_1'), 1), (('src_1', 'src_1'), 1))] = 'ADT2'
+        diagram_type_dict[((('snk_1', 'snk_1'), 1), (('src_1', 'src_2'), 1), (('src_2', 'src_1'), 1))] = 'ADT3'
+        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'snk_1'), 1))] = 'ADT5_snk' #individual pipi bubbles
         diagram_type_dict[((('src_1', 'src_2'), 1), (('src_2', 'src_1'), 1))] = 'ADT5_src'
         exprs = [
                 mk_fac(1) + f"1",
                 ]
         for mode_src in [0, 1, 2, 3]:
+            #cross term vacsub improvement
+            exprs += [
+                    
+                        (((mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('snk_1','snk_2',True)) - mk_fac(f"pipi_avg_sub(snk_1,snk_2,size,{mode_src})"))
+                        * (mk_sigma('src_1') - mk_fac(f"sigma_avg_sub(src_1)"))
+                        + f"wf_snk({mode_src}) * (pipi_i00^dag(0) - <pipi_i0>) * (sigma(-tsep) - <sigma>)",
+                         ['ADT0','ADT2','ADT4_src','ADT5_snk']),
+                       
+
+                        ((mk_sigma('snk_1',True) - mk_fac(f"sigma_avg_sub(snk_1)"))
+                        *((mk_fac(f"pipi_wave_function(src_1, src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('src_1','src_2')) - mk_fac(f"pipi_avg_sub(src_1,src_2,size,{mode_src})"))
+                        + f"wf_snk({mode_src}) * (sigma^dag(0) - <sigma>) * (pipi_i0(-tsep) - <pipi>",
+                         ['ADT0','ADT3','ADT4_snk','ADT5_src']),
+
+                    ]
+
             for mode_snk in [0, 1, 2, 3]:
                 exprs += [
                         
-                        (mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
-                        * mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-                        * mk_pipi_i0("snk_1", "snk_2", True)
-                        * mk_pipi_i0("src_1", "src_2")
-                        + f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i00^dag(0) * pipi_i00(-tsep)",'ADT1'),
-
                         #(mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
                         #* mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* (mk_pipi_i0('snk_1','snk_2',True) - mk_fac(f"pipi_avg_sub(snk_1,snk_2,size)"))
-                        #* (mk_pipi_i0('src_1','src_2') - mk_fac(f"pipi_avg_sub(src_1,src_2,size)"))
-                        #+ f"wf_snk({mode_snk}) * wf_src({mode_src}) * (pipi_i00^dag(0) - <pipi_i0>) * (pipi_i00(-tsep) - <pipi_i0>)",
-                        # ['ADT0','ADT1','ADT5_snk','ADT5_src']),
+                        #* mk_pipi_i0("snk_1", "snk_2", True)
+                        #* mk_pipi_i0("src_1", "src_2")
+                        #+ f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i00^dag(0) * pipi_i00(-tsep)",'ADT1'),
 
+                        #jackknife average
                         (((mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
                         * mk_pipi_i0('snk_1','snk_2',True)) - mk_fac(f"pipi_avg_sub(snk_1,snk_2,size,{mode_snk})"))
                         * ((mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
                         * mk_pipi_i0('src_1','src_2')) - mk_fac(f"pipi_avg_sub(src_1,src_2,size,{mode_src})"))
                         + f"wf_snk({mode_snk}) * wf_src({mode_src}) * (pipi_i00^dag(0) - <pipi_i0>) * (pipi_i00(-tsep) - <pipi_i0>)",
                          ['ADT0','ADT1','ADT5_snk','ADT5_src']),
+
+                        #jackblocks, time = 0
+                        #(((mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
+                        #* mk_pipi_i0('snk_1','snk_2',True)) - mk_fac(f"pipi_avg_jk_sub(snk_1,snk_2,size,{mode_snk})"))
+                        #* ((mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        #* mk_pipi_i0('src_1','src_2')) - mk_fac(f"pipi_avg_jk_sub(src_1,src_2,size,{mode_src})"))
+                        #+ f"wf_snk({mode_snk}) * wf_src({mode_src}) * (pipi_i00^dag(0) - <pipi_i0_jk>) * (pipi_i00(-tsep) - <pipi_i0_jk>)",
+                        # ['ADT0','ADT1','ADT5_snk','ADT5_src']),
 
                         ]
 
@@ -692,7 +837,9 @@ def get_cexpr_pipi_vac_psnk_psrc():
         return cexpr
     base_positions_dict = dict()
     base_positions_dict["pipi_wave_function"] = pipi_wave_function
-    base_positions_dict["pipi_avg_sub"] = pipi_avg_sub
+    base_positions_dict["pipi_avg_sub"] = pipi_avg_sub 
+    base_positions_dict["pipi_avg_jk_sub"] = pipi_avg_jk_sub
+    base_positions_dict["sigma_avg_sub"] = sigma_avg_sub 
     base_positions_dict["pipi_op_dis_4d_sqr_limit"] = 0.5 # default value, to be overrided by `pd`.
     return cache_compiled_cexpr(
             calc_cexpr,
@@ -706,31 +853,35 @@ def get_cexpr_pipi_vac_psnk_psrc():
 def get_cexpr_pipi_corr_psnk_psrc():
     fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_I0_psnk_psrc"
     def calc_cexpr():
-        diagram_type_dict = dict() #the auto contractor deals with each term within each type, along with prefactors present in the sum. 
+        diagram_type_dict = dict() #the auto contractor deals with each term within each type, along with prefactors present in the sum.  
+        diagram_type_dict[()] = 'ADT0' #constant-constant term
+
         #pipi-sigma
         diagram_type_dict[((('snk_1', 'src_1'), 1), (('src_1', 'src_2'), 1), (('src_2', 'snk_1'), 1))] = 'ADT1_pps'
-        diagram_type_dict[((('snk_1', 'snk_1'), 1), (('src_1', 'src_2'), 1), (('src_2', 'src_1'), 1))] = 'ADT2_pps'
+        diagram_type_dict[((('snk_1', 'snk_1'), 1), (('src_1', 'src_2'), 1), (('src_2', 'src_1'), 1))] = 'ADT2_pps' #V
 
         #sigma-pipi
-        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'snk_1'), 1), (('src_1', 'src_1'), 1))] = 'ADT1_spp'
-        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'src_1'), 1), (('src_1', 'snk_1'), 1))] = 'ADT2_spp'
+        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'src_1'), 1), (('src_1', 'snk_1'), 1))] = 'ADT1_spp' 
+        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'snk_1'), 1), (('src_1', 'src_1'), 1))] = 'ADT2_spp' #V
         
         #pipi-pipi
-        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'snk_1'), 1), (('src_1', 'src_2'), 1), (('src_2', 'src_1'), 1))] = 'ADT1'
+        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'snk_1'), 1), (('src_1', 'src_2'), 1), (('src_2', 'src_1'), 1))] = 'ADT1' #V
         diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'src_1'), 1), (('src_1', 'src_2'), 1), (('src_2', 'snk_1'), 1))] = 'ADT2'
         diagram_type_dict[((('snk_1', 'src_1'), 1), (('snk_2', 'src_2'), 1), (('src_1', 'snk_1'), 1), (('src_2', 'snk_2'), 1))] = 'ADT3'
         diagram_type_dict[((('snk_1', 'src_1'), 1), (('snk_2', 'src_2'), 1), (('src_1', 'snk_2'), 1), (('src_2', 'snk_1'), 1))] = 'ADT4'
 
+        #terms for improved vacuum subtraction
+        diagram_type_dict[((('snk_1', 'snk_2'), 1), (('snk_2', 'snk_1'), 1))] = 'ADT5_snk' #single pipi bubbles
+        diagram_type_dict[((('src_1', 'src_2'), 1), (('src_2', 'src_1'), 1))] = 'ADT5_src'
+
+        diagram_type_dict[((('src_1', 'src_1'), 1),)] = 'ADT6_src' #single sigma bubbles
+        diagram_type_dict[((('snk_1', 'snk_1'), 1),)] = 'ADT6_snk'
+
         exprs = [
                 mk_fac(1) + f"1",
-                
-                #sigma vevs
-                #mk_sigma("src_1") + f"sigma(-tsep)",
-
-                #mk_sigma("src_1",True) + f"sigma^dag(0)",
 
                 #sigma correlator
-                mk_sigma("src_1",True) * mk_sigma("snk_1") + f"sigma^dag(0) * sigma(-tsep)",
+                #mk_sigma("src_1",True) * mk_sigma("snk_1") + f"sigma^dag(0) * sigma(-tsep)",
 
                 ]
         for mode_src in [ 0, 1, 2, 3,]:
@@ -740,14 +891,30 @@ def get_cexpr_pipi_corr_psnk_psrc():
                         * mk_sigma('snk_1',True) * mk_pipi_i0('src_1','src_2') + f"wf_src({mode_src}) * sigma^dag(0) * pipi_i00(-tsep)",'ADT1_pps'),
 
                         (mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-                        * mk_sigma('snk_1',True) * mk_pipi_i0('src_1','src_2') + f"wf_src({mode_src}) * sigma^dag(0) * pipi_i00(-tsep)",'ADT2_pps'),
+                        * mk_sigma('snk_1',True) * mk_pipi_i0('src_1','src_2') + f"wf_src({mode_src}) * sigma^dag(0) * pipi_i00(-tsep)",'ADT2_pps'),#V
 
                         (mk_fac(f"pipi_wave_function(snk_1,snk_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
                         * mk_pipi_i0('snk_1','snk_2',True) * mk_sigma('src_1') + f"wf_src({mode_src}) * sigma^dag(0) * pipi_i00(-tsep)",'ADT1_spp'),
                    
                         (mk_fac(f"pipi_wave_function(snk_1,snk_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-                        * mk_pipi_i0('snk_1','snk_2',True) * mk_sigma('src_1') + f"wf_src({mode_src}) * sigma^dag(0) * pipi_i00(-tsep)",'ADT2_spp'),
-                        ]
+                        * mk_pipi_i0('snk_1','snk_2',True) * mk_sigma('src_1') + f"wf_src({mode_src}) * sigma^dag(0) * pipi_i00(-tsep)",'ADT2_spp'), #V
+
+                        #improved pipi-sigma vacuum terms
+
+                        (((mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('snk_1','snk_2',True)) - mk_fac(f"pipi_avg_sub(snk_1,snk_2,size,{mode_src})"))
+                        * (mk_sigma('src_1') - mk_fac(f"sigma_avg_sub(src_1)"))
+                        + f"wf_snk({mode_src}) * (pipi_i00^dag(0) - <pipi_i0>) * (sigma(-tsep) - <sigma>)",
+                         ['ADT0','ADT2_spp','ADT6_src','ADT5_snk']),
+
+                        ((mk_sigma('snk_1',True) - mk_fac(f"sigma_avg_sub(snk_1)"))
+                        *((mk_fac(f"pipi_wave_function(src_1, src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('src_1','src_2')) - mk_fac(f"pipi_avg_sub(src_1,src_2,size,{mode_src})"))
+                        + f"wf_snk({mode_src}) * (sigma^dag(0) - <sigma>) * (pipi_i0(-tsep) - <pipi>",
+                         ['ADT0','ADT2_pps','ADT6_snk','ADT5_src']),
+
+                         ]
+
             for mode_snk in [ 0, 1, 2, 3,]:
                 exprs += [
                         #I=0 pipi-pipi terms
@@ -774,6 +941,15 @@ def get_cexpr_pipi_corr_psnk_psrc():
                         * mk_pipi_i0("snk_1", "snk_2", True)
                         * mk_pipi_i0("src_1", "src_2")
                         + f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i00^dag(0) * pipi_i00(-tsep)",'ADT4'),
+                      
+                        #improved vacuum
+                        (((mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('snk_1','snk_2',True)) - mk_fac(f"pipi_avg_sub(snk_1,snk_2,size,{mode_snk})"))
+                        * ((mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('src_1','src_2')) - mk_fac(f"pipi_avg_sub(src_1,src_2,size,{mode_src})"))
+                        + f"wf_snk({mode_snk}) * wf_src({mode_src}) * (pipi_i00^dag(0) - <pipi_i0>) * (pipi_i00(-tsep) - <pipi_i0>)",
+                         ['ADT0','ADT1','ADT5_snk','ADT5_src']),
+
                         #---
                         ]
 
@@ -785,6 +961,8 @@ def get_cexpr_pipi_corr_psnk_psrc():
         return cexpr
     base_positions_dict = dict()
     base_positions_dict["pipi_wave_function"] = pipi_wave_function
+    base_positions_dict["pipi_avg_sub"] = pipi_avg_sub
+    base_positions_dict["sigma_avg_sub"] = sigma_avg_sub
     base_positions_dict["pipi_op_dis_4d_sqr_limit"] = 0.5 # default value, to be overrided by `pd`.
     return cache_compiled_cexpr(
             calc_cexpr,
@@ -798,7 +976,7 @@ def get_cexpr_pipi_corr_psnk_psrc():
 
 def auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-I0D1/traj-{traj}/pipi_vev.lat"
+    fn = f"{job_tag}/auto-contract-pipi-I0D3/traj-{traj}/pipi_vev.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -896,7 +1074,7 @@ def auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob,
 
 def auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-phase-avg/traj-{traj}/pipi_vev_pos_avg.lat"
+    fn = f"{job_tag}/auto-contract-pipi-phase-avg-D1/traj-{traj}/pipi_vev_pos_avg.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -1003,7 +1181,7 @@ def auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop, get_psel_prob, g
 
 def auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-dc-sub2/traj-{traj}/pipi_vev_pos.lat"
+    fn = f"{job_tag}/auto-contract-dc-sub5/traj-{traj}/pipi_vev_pos.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -1120,7 +1298,7 @@ def auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop, get_psel_prob, g
 @q.timer(is_timer_fork=True)
 def auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-I0D1/traj-{traj}/pipi_corr_psnk_psrc.lat" 
+    fn = f"{job_tag}/auto-contract-pipi-I0D3/traj-{traj}/pipi_corr_psnk_psrc.lat" 
     #fn = f"{job_tag}/auto-contract-pipi-V/traj-{traj}/vac_corr_psnk_psrc.lat"
     if get_load_path(fn) is not None:
         return
@@ -1148,10 +1326,11 @@ def auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob
     #
     geo = q.Geometry(total_site)
     total_volume = geo.total_volume
-    pipi_op_t_sep = get_param(job_tag, "measurement", "pipi_op_t_sep")
+    pipiop_tsep = get_param(job_tag, "measurement", "pipi_op_t_sep")
     pipi_op_dis_4d_sqr_limit = get_param(job_tag, "measurement", "pipi_op_dis_4d_sqr_limit")
     pipi_corr_t_sep_list = get_param(job_tag, "measurement", "pipi_corr_t_sep_list")
     data_list = []
+
     for pidx_src in range(len(xg_psel_arr)):
         xg_src = q.Coordinate(xg_psel_arr[pidx_src])
         t_src = xg_src[3]
@@ -1183,23 +1362,23 @@ def auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob
         assert pidx_snk != pidx_src
         prob1 = psel_prob_arr[pidx_snk] * psel_prob_arr[pidx_src]
         pidx_snk_src_2_list = []
-        pipiop_tsep = [5]
-        for pipi_op_t_sep in pipiop_tsep: #iterate over possible internal pion separations, using the same internal sep for source and sink operator
-            t_src_2 = (t_src - pipi_op_t_sep) % t_size
-            #for pipi_op_t_sep_snk in pipiop_tsep:
-            t_snk_2 = (t_snk + pipi_op_t_sep) % t_size
-            for pidx_src_2 in pidx_list_list[t_src_2]:
-                if pidx_src_2 in [ pidx_snk, pidx_src, ]:
+        
+        #for pipi_op_t_sep in pipiop_tsep: #iterate over possible internal pion separations, using the same internal sep for source and sink operator
+        t_src_2 = (t_src - pipiop_tsep) % t_size
+        #for pipi_op_t_sep_snk in pipiop_tsep:
+        t_snk_2 = (t_snk + pipiop_tsep) % t_size
+        for pidx_src_2 in pidx_list_list[t_src_2]:
+            if pidx_src_2 in [ pidx_snk, pidx_src, ]:
+                continue
+            for pidx_snk_2 in pidx_list_list[t_snk_2]:
+                if pidx_snk_2 in [ pidx_src_2, pidx_snk, pidx_src, ]:
                     continue
-                for pidx_snk_2 in pidx_list_list[t_snk_2]:
-                    if pidx_snk_2 in [ pidx_src_2, pidx_snk, pidx_src, ]:
-                        continue
-                    prob2 = psel_prob_arr[pidx_snk_2] * psel_prob_arr[pidx_src_2]
-                    prob = prob1 * prob2
-                    pidx_snk_src_2_list.append((pidx_snk_2, pidx_src_2, prob,)) #we then save a list of the second source and sink locations
+                prob2 = psel_prob_arr[pidx_snk_2] * psel_prob_arr[pidx_src_2]
+                prob = prob1 * prob2
+                pidx_snk_src_2_list.append((pidx_snk_2, pidx_src_2, prob,)) #we then save a list of the second source and sink locations
         #values array holds the evaluation of a given expression for each internal pion separation for both initial and final pions for each expression
         values = np.zeros(
-                (#len(pipiop_tsep),
+                (
                  len(expr_names),
                  ),
                 dtype=np.complex128,
@@ -1211,9 +1390,9 @@ def auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob
             xg_src_2 = q.Coordinate(xg_psel_arr[pidx_src_2])
             t_snk_2 = xg_snk_2[3]
             t_src_2 = xg_src_2[3]
-            pipi_op_t_sep_snk = (t_snk_2 - t_snk) % t_size
-            pipi_op_t_sep_src = (t_src - t_src_2) % t_size
-            assert pipi_op_t_sep_snk == pipi_op_t_sep_src
+            pipiop_tsep_snk = (t_snk_2 - t_snk) % t_size
+            pipiop_tsep_src = (t_src - t_src_2) % t_size
+            assert pipiop_tsep_snk == pipiop_tsep_src
             pd = {
                     "snk_1": ("point", xg_snk.to_tuple(),),
                     "snk_2": ("point", xg_snk_2.to_tuple(),),
@@ -1226,10 +1405,8 @@ def auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob
             values += val/prob
         return values, t_sep_idx, data_list_idx, data_list_size
     def sum_function(val_list):
-        pipiop_tsep = [5]
         values = np.zeros(
                 (len(pipi_corr_t_sep_list), 
-                 #len(pipiop_tsep),
                  len(expr_names),
                  ),
                 dtype=np.complex128,
@@ -1242,7 +1419,6 @@ def auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob
     res_sum = q.parallel_map_sum(feval, load_data(), sum_function=sum_function, chunksize=1)
     res_sum = q.glb_sum(res_sum)
     res_sum *= 1.0 #/ (t_size * (total_volume / t_size) * (total_volume / t_size))
-    pipiop_tsep = [5]
     ld = q.mk_lat_data([
         [ "expr_name", len(expr_names), expr_names, ],
         [ "t_sep", len(pipi_corr_t_sep_list), pipi_corr_t_sep_list, ],
@@ -1263,6 +1439,12 @@ def get_cexpr_pipi_3ptATW_corr_psrc_psnk():
     fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_3ptATW_corr_psnk_psrc"
     def calc_cexpr():
         diagram_type_dict = dict()
+        diagram_type_dict[()] = 'ADT0'
+        diagram_type_dict[((('int_1', 'snk'), 1), (('int_2', 'src'), 1), (('snk', 'int_1'), 1), (('src', 'int_2'), 1))] = 'ADT1'
+        diagram_type_dict[((('int_1', 'snk'), 1), (('int_2', 'src'), 1), (('snk', 'int_2'), 1), (('src', 'int_1'), 1))] = 'ADT2'
+        diagram_type_dict[((('int_1', 'int_2'), 1), (('int_2', 'int_1'), 1), (('snk', 'src'), 1), (('src', 'snk'), 1))] = 'ADT3' #V
+        diagram_type_dict[((('int_1', 'int_2'), 1), (('int_2', 'snk'), 1), (('snk', 'src'), 1), (('src', 'int_1'), 1))] = 'ADT4'
+        diagram_type_dict[((('int_1', 'int_2'), 1), (('int_2', 'src'), 1), (('snk', 'int_1'), 1), (('src', 'snk'), 1))] = 'ADT5'
         exprs = [
                 mk_fac(1) + f"1",
                 ]
@@ -1270,10 +1452,33 @@ def get_cexpr_pipi_3ptATW_corr_psrc_psnk():
             for mode_snk in [ 0, 1, 2, 3,]:
                 exprs += [
                         # <pi0(t_1+t_2) * 2pi(t_2) * pi0(0)^dag>
+                        (mk_fac(f"wave_function(snk,src,{mode_snk},size)")
+                        * mk_fac(f"pipi_wave_function(int_1,int_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pi_0("src", True) * mk_pipi_i0("int_1","int_2") * mk_pi_0("snk")
+                        + f"wf({mode_snk}) * wf({mode_src}) * pi0^dag(0) * pipi_i20(-t_int) * pi0(-t)",)
+
+                        #standard vacuum term
+                        (mk_fac(f"wave_function(snk,src,{mode_snk},size)")
+                        * mk_fac(f"pipi_wave_function(int_1,int_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pi_0("src", True) * mk_pipi_i0("int_1","int_2") * mk_pi_0("snk")
+                        + f"wf({mode_snk}) * wf({mode_src}) * pi0^dag(0) * pipi_i0(-t_int) * pi0(-t)",'ADT3')
+
+                        #improved vacuum subtraction
+                        mk_fac(f"wave_function(snk,src,{mode_snk},size)")
+                        * mk_pi_0("src", True) 
+                        * ((mk_fac(f"pipi_wave_function(int_1,int_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)") * mk_pipi_i0("int_1","int_2")) - mk_fac(f"pipi_avg_sub()")) 
+                        * mk_pi_0("snk")
+                        + f"wf({mode_snk}) * wf({mode_src}) * pi0^dag(0) * pipi_i0(-t_int) * pi0(-t)",
+
                         mk_fac(f"wave_function(snk,src,{mode_snk},size)")
                         * mk_fac(f"pipi_wave_function(int_1,int_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
                         * mk_pi_0("src", True) * mk_pipi_i0("int_1","int_2") * mk_pi_0("snk")
-                        + f"wf({mode_snk}) * wf({mode_src}) * pi0^dag(0) * pipi_i20(-t_int) * pi0(-t)",
+                        + f"wf({mode_snk}) * wf({mode_src}) * pi0^dag(0) * pipi_i0(-t_int) * pi0(-t)",
+
+                        mk_fac(f"wave_function(snk,src,{mode_snk},size)")
+                        * mk_fac(f"pipi_wave_function(int_1,int_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pi_0("src", True) * mk_pipi_i0("int_1","int_2") * mk_pi_0("snk")
+                        + f"wf({mode_snk}) * wf({mode_src}) * pi0^dag(0) * pipi_i0(-t_int) * pi0(-t)",
                         #
                         ]
         cexpr = contract_simplify_compile(
@@ -1284,6 +1489,7 @@ def get_cexpr_pipi_3ptATW_corr_psrc_psnk():
         return cexpr
     base_positions_dict = dict()
     base_positions_dict["wave_function"] = wave_function
+    base_positions_dict["pipi_avg_sub"] = pipi_avg_sub
     base_positions_dict["pipi_wave_function"] = pipi_wave_function
     base_positions_dict["pipi_op_dis_4d_sqr_limit"] = 0.5 # default value, to be overrided by `pd`.
     return cache_compiled_cexpr(
@@ -1461,7 +1667,7 @@ def run_auto_contraction(
         get_fsel_prob,
         ):
     fname = q.get_fname()
-    fn_checkpoint = f"{job_tag}/auto-contract-I0D1/traj-{traj}/checkpoint.txt"
+    fn_checkpoint = f"{job_tag}/auto-contract-pipi-I0D3/traj-{traj}/checkpoint.txt"
     if get_load_path(fn_checkpoint) is not None:
         q.displayln_info(0, f"{fname}: '{fn_checkpoint}' exists.")
         return
@@ -1484,7 +1690,7 @@ def run_auto_contraction(
     #auto_contract_meson_corr_psnk_psrc_mom(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
     
     #pipi contraction functions
-    auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob) 
+    #auto_contract_pipi_vev_psnk_psrc(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob) 
     #auto_contract_pipi_vev_pos_avg(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
     #auto_contract_pipi_vev_pos_sub(job_tag, traj, get_get_prop,get_psel_prob, get_fsel_prob)
     auto_contract_pipi_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
@@ -1601,7 +1807,7 @@ def run_job_contraction(job_tag, traj):
         #
     #
     fns_produce = [
-            f"{job_tag}/auto-contract-I0D1/traj-{traj}/checkpoint.txt",
+            f"{job_tag}/auto-contract-pipi-I0D3/traj-{traj}/checkpoint.txt",
             #
             ]
     fns_need = [
@@ -1637,8 +1843,8 @@ def run_job_contraction(job_tag, traj):
     get_psel = run_psel_from_psel_prob(get_psel_prob)
     #
     prop_types = [
-            "wsrc psel s",
-            "wsrc psel l",
+            #"wsrc psel s",
+            #"wsrc psel l",
             "psrc psel s",
             "psrc psel l",
             # "rand_u1 fsel c",
@@ -1680,10 +1886,10 @@ def run_job_contraction(job_tag, traj):
    # benchmark_eval_cexpr(get_cexpr_pipi_corr_psnk_psrc())
 
 ### ------
-set_param("48I", "traj_list")(list(range(1102,1493,10))) #list(range(1102,1492,10)) + list(range(1505, 1636, 10)) + list(range(1705, 2116,10)) + list(range(1005, 1096, 10)))
+set_param("48I", "traj_list")(list(range(1442,1493,10)))
 set_param("48I", "measurement", "auto_contractor_chunk_size")(128)
 set_param("48I", "measurement", "meson_tensor_t_sep")(12)
-set_param("48I", "measurement", "pipi_op_t_sep")(5) #time separation between the two pions in a two pion operator. this is Delta
+set_param("48I", "measurement", "pipi_op_t_sep")(3) #time separation between the two pions in a two pion operator. this is Delta
 set_param("48I", "measurement", "pipi_op_dis_4d_sqr_limit")(25.0) #Minimum squared 4d distance between the two pion operators. We need to try with 9.0 and 16.0
 set_param("48I", "measurement", "pipi_corr_t_sep_list")(list(range(1, 21))) #list of time separations between the two pion operators that we want to measure
 set_param("48I", "measurement", "pipi_tensor_t_sep_list")([ 1, 2, ]) #not used
@@ -1752,7 +1958,7 @@ if __name__ == "__main__":
             q.clean_cache()
             try_gracefully_finish()
     k_count = 0
-    ncf = 30
+    ncf = 6
     for job_tag, traj in job_tag_traj_list:
         if is_performing_contraction:
             q.check_time_limit()

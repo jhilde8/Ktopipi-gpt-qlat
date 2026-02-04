@@ -104,7 +104,9 @@ def get_cexpr_meson_corr_psnk_psrc():
         diagram_type_dict[((('x_1', 'x_1'), 1), (('x_2', 'x_2'), 1))] = None
         exprs = [
                 mk_fac(1) + f"1", 
-                #mk_pi_p("x_2", True)    * mk_pi_p("x_1") + f"pi+^dag(0) * pi+(-tsep)",
+            
+                #mk_k_0("x_2", True) * mk_k_0("x_1") + f"k_0^dag(0) * k_0(-tsep)"
+
                 ]
         for mode in [0,1,2,3]:
             exprs += [
@@ -574,8 +576,8 @@ def run_job_contraction(job_tag, traj):
     fns_need = [
             (f"{job_tag}/psel-prop-psrc-light/traj-{traj}.qar", f"{job_tag}/psel-prop-psrc-light/traj-{traj}/checkpoint.txt",),
             (f"{job_tag}/psel-prop-psrc-strange/traj-{traj}.qar", f"{job_tag}/psel-prop-psrc-strange/traj-{traj}/checkpoint.txt",),
-            (f"{job_tag}/psel-prop-wsrc-light/traj-{traj}.qar", f"{job_tag}/psel-prop-wsrc-light/traj-{traj}/checkpoint.txt",),
-            (f"{job_tag}/psel-prop-wsrc-strange/traj-{traj}.qar", f"{job_tag}/psel-prop-wsrc-strange/traj-{traj}/checkpoint.txt",),
+            #(f"{job_tag}/psel-prop-wsrc-light/traj-{traj}.qar", f"{job_tag}/psel-prop-wsrc-light/traj-{traj}/checkpoint.txt",),
+            #(f"{job_tag}/psel-prop-wsrc-strange/traj-{traj}.qar", f"{job_tag}/psel-prop-wsrc-strange/traj-{traj}/checkpoint.txt",),
             f"{job_tag}/gauge-transform/traj-{traj_gf}.field",
             f"{job_tag}/points-selection/traj-{traj}.lati",
             f"{job_tag}/field-selection/traj-{traj}.field",
@@ -604,8 +606,8 @@ def run_job_contraction(job_tag, traj):
     get_psel = run_psel_from_psel_prob(get_psel_prob)
     #
     prop_types = [
-            "wsrc psel s",
-            "wsrc psel l",
+            #"wsrc psel s",
+            #"wsrc psel l",
             "psrc psel s",
             "psrc psel l",
             # "rand_u1 fsel c",
