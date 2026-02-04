@@ -19,13 +19,16 @@ is_cython = not is_test()
 load_path_list[:] = [
         #"results",
         #"qcddata",
-        #"/data1/qcddata2",
+        "/data1/qcddata2",
         #"/data1/qcddata3",
         #"/data2/qcddata3-prop",
+<<<<<<< HEAD
         "/sdcc/u/jhildebra/Ktopipi-gpt-qlat/results",
         #"/hpcgpfs01/scratch/jhildebra/kpipipsrc/results",
         "/hpcgpfs01/scratch/jhildebra/psrc_props",
         '/hpcgpfs01/work/lqcd/staging/RBC/qcddata/MDWF/2+1f/48nt96/IWASAKI/b2.13/ls24b+c2/M1.8/ms0.0362/mu0.00078/jhildebra'
+=======
+>>>>>>> 64e163dc653baecf58fee7d8907b89f6b2a2a4f5
         ]
 
 #point source meson correlator
@@ -108,11 +111,17 @@ def get_cexpr_meson_corr_psnk_psrc():
         diagram_type_dict[((('x_1', 'x_1'), 1), (('x_2', 'x_2'), 1))] = None
         exprs = [
                 mk_fac(1) + f"1", 
+<<<<<<< HEAD
                     
                 #mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
                 #mk_k_0("x_2", True)     * mk_k_0("x_1")
                 #+ f"K0^dag(0) * K0(-tsep)",
                 
+=======
+            
+                #mk_k_0("x_2", True) * mk_k_0("x_1") + f"k_0^dag(0) * k_0(-tsep)"
+
+>>>>>>> 64e163dc653baecf58fee7d8907b89f6b2a2a4f5
                 ]
         for mode in [0,1,2,3]:
             exprs += [
@@ -120,6 +129,55 @@ def get_cexpr_meson_corr_psnk_psrc():
                     * mk_pi_p("x_2", True)    * mk_pi_p("x_1")
                     + f"wf({mode}) * pi+^dag(0) * pi+(-tsep)",
                     ]
+<<<<<<< HEAD
+=======
+                    #
+                   # mk_fac(f"wave_function(x_1,x_2, {mode}, size)")
+                   # * mk_pi_m("x_2",True) * mk_pi_m("x_1")
+                   # + f"wf({mode}) * pi-^dag(0) * pi-(-tsep)",
+                    #
+                   # mk_fac(f"wave_function(x_1,x_2, {mode}, size)")
+                   # * mk_pi_0("x_2", True) * mk_pi_0("x_1")
+                   # + f"wf({mode}) * pi0^dag(0) * pi0(-tsep)",
+                    #
+                   # mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
+                   # * mk_j5pi_mu("x_2", 3)    * mk_pi_p("x_1")
+                   # + f"wf({mode}) * j5pi_t(0) * pi+(-tsep)",
+                    #
+                   # mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
+                   # * mk_pi_p("x_2", True)    * mk_j5pi_mu("x_1", 3, True)
+                   # + f"wf({mode}) * pi+^dag(0) * j5pi_t^dag(-tsep)",
+                    #
+                   # mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
+                   # * mk_j5pi_mu("x_2", 3)    * mk_j5pi_mu("x_1", 3, True)
+                   # + f"wf({mode}) * j5pi_t(0) * j5pi_t^dag(-tsep)",
+                    #
+                   # mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
+                   # * mk_k_0("x_2", True)     * mk_k_0("x_1")
+                   # + f"wf({mode}) * K0^dag(0) * K0(-tsep)",
+                    #
+                   # mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
+                   # * mk_j5k_mu("x_2", 3)     * mk_k_p("x_1")
+                   # + f"wf({mode}) * j5k_t(0) * K+(-tsep)",
+                    #
+                   # mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
+                   # * mk_k_p("x_2", True)     * mk_j5k_mu("x_1", 3, True)
+                   # + f"wf({mode}) * K+^dag(0) * j5k_t^dag(-tsep)",
+                    #
+                   # mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
+                   # * mk_j5k_mu("x_2", 3)     * mk_j5k_mu("x_1", 3, True)
+                   # + f"wf({mode}) * j5k_t(0) * j5k_t^dag(-tsep)",
+                    #
+                   # mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
+                   # * mk_a0_p("x_2", True)    * mk_a0_p("x_1")
+                   # + f"wf({mode}) * a0+^dag(0) * a0+(-tsep)",
+                    #
+                   # mk_fac(f"wave_function(x_1, x_2, {mode}, size)")
+                   # * mk_kappa_p("x_2", True) * mk_kappa_p("x_1")
+                   # + f"wf({mode}) * kappa+^dag(0) * kappa+(-tsep)",
+                    #
+                    #]
+>>>>>>> 64e163dc653baecf58fee7d8907b89f6b2a2a4f5
         cexpr = contract_simplify_compile(
                 *exprs,
                 is_isospin_symmetric_limit=True,
@@ -142,6 +200,7 @@ def get_cexpr_meson_corr_psnk_psrc():
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
+<<<<<<< HEAD
     fn = f"{job_tag}/auto-contract-meson/traj-{traj}/meson_corr_psnk_psrc.lat"
     if get_load_path(fn) is not None:
         return
@@ -265,6 +324,9 @@ def auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_pro
 def auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
     fn = f"{job_tag}/auto-contract-meson/traj-{traj}/meson_corr_psel.lat"
+=======
+    fn = f"{job_tag}/auto-contract-test/traj-{traj}/meson_corr_mom.lat"
+>>>>>>> 64e163dc653baecf58fee7d8907b89f6b2a2a4f5
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -515,7 +577,7 @@ def run_auto_contraction(
         get_fsel_prob,
         ):
     fname = q.get_fname()
-    fn_checkpoint = f"{job_tag}/auto-contract-meson/traj-{traj}/checkpoint.txt"
+    fn_checkpoint = f"{job_tag}/auto-contract-test/traj-{traj}/checkpoint.txt"
     if get_load_path(fn_checkpoint) is not None:
         q.displayln_info(0, f"{fname}: '{fn_checkpoint}' exists.")
         return
@@ -649,12 +711,16 @@ def run_job_contraction(job_tag, traj):
     #
 
     fns_produce = [
-            f"{job_tag}/auto-contract-meson/traj-{traj}/checkpoint.txt",
+            f"{job_tag}/auto-contract-test/traj-{traj}/checkpoint.txt",
             #
             ]
     fns_need = [
             (f"{job_tag}/psel-prop-psrc-light/traj-{traj}.qar", f"{job_tag}/psel-prop-psrc-light/traj-{traj}/checkpoint.txt",),
+<<<<<<< HEAD
             #(f"{job_tag}/psel-prop-psrc-strange/traj-{traj}.qar", f"{job_tag}/psel-prop-psrc-strange/traj-{traj}/checkpoint.txt",),
+=======
+            (f"{job_tag}/psel-prop-psrc-strange/traj-{traj}.qar", f"{job_tag}/psel-prop-psrc-strange/traj-{traj}/checkpoint.txt",),
+>>>>>>> 64e163dc653baecf58fee7d8907b89f6b2a2a4f5
             #(f"{job_tag}/psel-prop-wsrc-light/traj-{traj}.qar", f"{job_tag}/psel-prop-wsrc-light/traj-{traj}/checkpoint.txt",),
             #(f"{job_tag}/psel-prop-wsrc-strange/traj-{traj}.qar", f"{job_tag}/psel-prop-wsrc-strange/traj-{traj}/checkpoint.txt",),
             f"{job_tag}/gauge-transform/traj-{traj_gf}.field",
@@ -687,7 +753,11 @@ def run_job_contraction(job_tag, traj):
     prop_types = [
             #"wsrc psel s",
             #"wsrc psel l",
+<<<<<<< HEAD
             #"psrc psel s",
+=======
+            "psrc psel s",
+>>>>>>> 64e163dc653baecf58fee7d8907b89f6b2a2a4f5
             "psrc psel l",
             # "rand_u1 fsel c",
             # "rand_u1 fsel s",
@@ -728,7 +798,11 @@ def run_job_contraction(job_tag, traj):
    # benchmark_eval_cexpr(get_cexpr_pipi_corr_psnk_psrc())
 
 ### ------
+<<<<<<< HEAD
 set_param("48I", "traj_list")([2165])
+=======
+set_param("48I", "traj_list")([1102])
+>>>>>>> 64e163dc653baecf58fee7d8907b89f6b2a2a4f5
 set_param("48I", "measurement", "auto_contractor_chunk_size")(128)
 set_param("48I", "measurement", "meson_tensor_t_sep")(12)
 set_param("48I", "measurement", "pipi_op_t_sep")(5) #time separation between the two pions in a two pion operator. this is Delta
