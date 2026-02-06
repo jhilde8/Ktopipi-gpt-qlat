@@ -47,7 +47,7 @@ def wave_function_mode_000(xrel,yrel,zrel,NS):
 
 #constructs the Fourier component for the (0,0,0) momentum config. 
 #inputs are relative coordinates. 
-def wave_function_mode_001_f(xrel,yrel,zrel,NS):
+def wave_function_mode_001(xrel,yrel,zrel,NS):
     w1 = np.cos((2.0 * np.pi * xrel / NS))
     w2 = np.cos((2.0 * np.pi * yrel / NS))
     w3 = np.cos((2.0 * np.pi * zrel / NS))
@@ -147,8 +147,6 @@ def mom_project_half(pos_corr,count_corr,mode):
     #mom_corr *= ((25*25*25*49)/(48*48*48*96))
 
     return mom_corr
-
-
 
 #from corr data saved in terms of tsrc and tsnk, this creates a corr in terms of tsep. 
 def construct_tsep(corr,tsep_max):
