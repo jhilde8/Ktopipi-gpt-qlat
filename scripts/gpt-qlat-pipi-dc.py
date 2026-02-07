@@ -34,9 +34,9 @@ load_path_list[:] = [
         #"/data2/qcddata3-prop",
         "/hpcgpfs01/scratch/jhildebra/psrc_props",
         "/hpcgpfs01/work/lqcd/staging/RBC/qcddata/MDWF/2+1f/48nt96/IWASAKI/b2.13/ls24b+c2/M1.8/ms0.0362/mu0.00078/jhildebra",
-        "/data1/qcddata2",
-        "/data1/qcddata3",
-        "/data2/qcddata3-prop",
+        #"/data1/qcddata2",
+        #"/data1/qcddata3",
+        #"/data2/qcddata3-prop",
         ]
 
 # ----
@@ -212,7 +212,7 @@ def get_cexpr_meson_corr_psnk_psrc():
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-meson-test/traj-{traj}/meson_corr_psnk_psrc.lat"
+    fn = f"{job_tag}/auto-contract-pipi-V/traj-{traj}/meson_corr_psnk_psrc.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -335,7 +335,7 @@ def auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_pro
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-meson-test/traj-{traj}/meson_corr_psnk_psrc_psel.lat"
+    fn = f"{job_tag}/auto-contract-pipi-V/traj-{traj}/meson_corr_psnk_psrc_psel.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -417,7 +417,7 @@ def auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_pse
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc_psel_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pos-test/traj-{traj}/meson_corr_pos.lat"
+    fn = f"{job_tag}/auto-contract-pipi-V/traj-{traj}/meson_corr_pos.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -1004,9 +1004,11 @@ def get_cexpr_pipi_corr_psnk_psrc_psel():
 # load in data for the improved subtraction. ADJUST ME
 #fn_pipi_avg = "/home/jhildebrand28/ktopipi/"
 
-#sigma_avg = np.load(fn_pipi_avg + "sigma_avg.npy")
+fn_pipi_avg = "/hpcgpfs01/scratch/jhildebra/vev_data/"
 
-#pipi_vev = np.load(fn_pipi_avg + "pi_vev_avg_D3.npy") #shape (4,25,25,25)
+sigma_avg = np.load(fn_pipi_avg + "sigma_avg.npy")
+
+pipi_vev = np.load(fn_pipi_avg + "pi_vev_avg_D5.npy") #shape (4,25,25,25)
 
 #average over spatial coordinates
 def sigma_avg_sub(p1):
@@ -1050,7 +1052,7 @@ def get_cexpr_pipi_corr_psnk_psrc_V():
                 mk_fac(1) + f"1",
 
                 #improved vacuum subtraction with sigma using psel->psel vev
-                #mk_sigma('x_1') - mk_fac(f"sigma_avg_sub(x_1)") + f"sigma(-tsep) - <sigma>",
+                mk_sigma('x_1') - mk_fac(f"sigma_avg_sub(x_1)") + f"sigma(-tsep) - <sigma>",
             
                 ]
         for mode in [0,1,2,3]:
@@ -1064,8 +1066,8 @@ def get_cexpr_pipi_corr_psnk_psrc_V():
                         * mk_pipi_i0('x_1','x_2',True) + f"wf_snk({mode}) * pipi_i0^dag(0)",
                 
                         #improved vac sub using psel -> psel vev.
-                        #(mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_pipi_i0('x_1','x_2')) - mk_fac(f"pipi_avg_sub(x_1,x_2,size,{mode})") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>",        
+                        (mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('x_1','x_2')) - mk_fac(f"pipi_avg_sub(x_1,x_2,size,{mode})") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>",        
                 
                     ]
         cexpr = contract_simplify_compile(
@@ -1098,7 +1100,7 @@ def get_cexpr_pipi_corr_psnk_psrc_V():
 
 def auto_contract_pipi_corr_psnk_psrc_psel_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-fsel-total-test/traj-{traj}/pipi_vev.lat"
+    fn = f"{job_tag}/auto-contract-pipi-V/traj-{traj}/pipi_vev_psel.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -1199,7 +1201,7 @@ def auto_contract_pipi_corr_psnk_psrc_psel_V(job_tag, traj, get_get_prop, get_ps
 #contraction function for vacuum diagram. This will be done one bubble at a time, with the correlation happening after. 
 def auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-fsel-total-test/traj-{traj}/pipi_vev.lat"
+    fn = f"{job_tag}/auto-contract-pipi-V/traj-{traj}/pipi_vev.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -1308,7 +1310,7 @@ def auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_pr
 @q.timer(is_timer_fork=True)
 def auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-fsel-total-test/traj-{traj}/pipi_corr_psnk_psrc_psel.lat"
+    fn = f"{job_tag}/auto-contract-pipi-V/traj-{traj}/pipi_corr_psnk_psrc_psel.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_pipi_corr_psnk_psrc_psel()
@@ -1446,7 +1448,7 @@ def run_auto_contraction(
         get_fsel_prob,
         ):
     fname = q.get_fname()
-    fn_checkpoint = f"{job_tag}/auto-contract-test/traj-{traj}/checkpoint.txt"
+    fn_checkpoint = f"{job_tag}/auto-contract-pipi-V/traj-{traj}/checkpoint.txt"
     if get_load_path(fn_checkpoint) is not None:
         q.displayln_info(0, f"{fname}: '{fn_checkpoint}' exists.")
         return
@@ -1469,7 +1471,7 @@ def run_auto_contraction(
         
 
     #meson psrc psel
-    auto_contract_meson_corr_psnk_psrc_psel_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
+    #auto_contract_meson_corr_psnk_psrc_psel_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
     auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)  
 
     #meson, psel, smeared
@@ -1497,7 +1499,7 @@ def run_job_contraction(job_tag, traj):
         #
     #
     fns_produce = [
-            f"{job_tag}/auto-contract-avg-test/traj-{traj}/checkpoint.txt",
+            f"{job_tag}/auto-contract-pipi-V/traj-{traj}/checkpoint.txt",
             #
             ]
     fns_need = [
@@ -1535,7 +1537,7 @@ def run_job_contraction(job_tag, traj):
     prop_types = [
             #"wsrc psel s",
             #"wsrc psel l",
-            "psrc psel s",
+            #"psrc psel s",
             "psrc psel l",
             #"gauge transform" #necessary for smeared operators. 
             # "rand_u1 fsel c",
@@ -1584,7 +1586,6 @@ set_param("48I", "measurement", "meson_tensor_t_sep")(12)
 set_param("48I", "measurement", "pipi_op_t_sep")([5,7,9]) #Delta
 set_param("48I", "measurement", "pipi_op_dis_4d_sqr_limit")(25.0) #Minimum squared 4d distance between the two pion operators. We need to try with 9.0 and 16.0
 set_param("48I", "measurement", "pipi_corr_t_sep_list")(list(range(1, 24))) #list of time separations between the two pion operators that we want to measure
-set_param("48I", "measurement", "tsep_snk_src_3pt")([12,18,24,30]) #list of fixed time separations between source and sink for a three point function
 
 set_param("48I", "measurement", "pipi_tensor_t_sep_list")([ 1, 2, ]) #not used
 set_param("48I", "measurement", "pipi_tensor_t_max")(20) #not used

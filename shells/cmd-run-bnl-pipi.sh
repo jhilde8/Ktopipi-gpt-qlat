@@ -2,7 +2,7 @@
 #SBATCH --job-name=pipi_fc
 #SBATCH --output=psrc_pipi_fc-%j.out
 #SBATCH --error=psrc_pipi_fc-%j.err
-#SBATCH --time=12:00:00
+#SBATCH --time=18:00:00
 #SBATCH --nodes=8
 #SBATCH --ntasks=8
 #SBATCH --cpus-per-task=64

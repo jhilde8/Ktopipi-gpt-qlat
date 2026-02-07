@@ -34,9 +34,9 @@ load_path_list[:] = [
         #"/data2/qcddata3-prop",
         "/hpcgpfs01/scratch/jhildebra/psrc_props",
         "/hpcgpfs01/work/lqcd/staging/RBC/qcddata/MDWF/2+1f/48nt96/IWASAKI/b2.13/ls24b+c2/M1.8/ms0.0362/mu0.00078/jhildebra",
-        "/data1/qcddata2",
-        "/data1/qcddata3",
-        "/data2/qcddata3-prop",
+        #"/data1/qcddata2",
+        #"/data1/qcddata3",
+        #"/data2/qcddata3-prop",
         ]
 
 # ----
@@ -217,7 +217,7 @@ def get_cexpr_meson_corr_psnk_psrc():
         for mode in [0,1,2,3]:
             exprs += [
                     mk_fac(f"wave_function(x_1,x_2,{mode},size)")
-                    * mk_pi_p("x_2",True) * mk_pi_p("x_1")
+                    * mk_pi_0("x_2",True) * mk_pi_0("x_1")
                     + f"pi+^dag(0) * pi+(-tsep)",
                     
             ]
@@ -245,7 +245,7 @@ def get_cexpr_meson_corr_psnk_psrc():
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-meson-test/traj-{traj}/meson_corr_psnk_psrc.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipisc-test/traj-{traj}/meson_corr_psnk_psrc.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -368,7 +368,7 @@ def auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_pro
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-meson-test/traj-{traj}/meson_corr_psnk_psrc_psel.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipisc-test/traj-{traj}/meson_corr_psnk_psrc_psel.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -1031,7 +1031,7 @@ def get_cexpr_pipi_corr_psnk_psrc_psel():
 
 @q.timer
 def get_cexpr_pipi_corr_psnk_psrc():
-    fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_psnk_psrc_D"
+    fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_psnk_psrc_DCR"
     def calc_cexpr():
         diagram_type_dict = dict() #the auto contractor deals with each term within each type, along with prefactors present in the sum. 
         #pipi-pipi
@@ -1052,11 +1052,11 @@ def get_cexpr_pipi_corr_psnk_psrc():
         for mode_src in [0,1,2,3]:
 
              #pipi-sigma cross terms
-            #(mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-            #* mk_sigma('snk_1',True) * mk_pipi_i0('src_1','src_2') + f"wf_src({mode_src}) * sigma^dag(0) * pipi_i0(-tsep)",'ADT5_pps'),
+            (mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+            * mk_sigma('snk_1',True) * mk_pipi_i0('src_1','src_2') + f"wf_src({mode_src}) * sigma^dag(0) * pipi_i0(-tsep)",'ADT5_pps'),
             
-            #(mk_fac(f"pipi_wave_function(snk_1,snk_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-            #* mk_pipi_i0('snk_1','snk_2',True) * mk_sigma('src_1') + f"wf_src({mode_src}) * pipi_i0^dag(0) * sigma(-tsep)",'ADT5_spp'),
+            (mk_fac(f"pipi_wave_function(snk_1,snk_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+            * mk_pipi_i0('snk_1','snk_2',True) * mk_sigma('src_1') + f"wf_src({mode_src}) * pipi_i0^dag(0) * sigma(-tsep)",'ADT5_spp'),
             
             for mode_snk in [0,1,2,3]:
                 exprs += [
@@ -1075,25 +1075,25 @@ def get_cexpr_pipi_corr_psnk_psrc():
                         + f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i0^dag(0) * pipi_i0(-tsep)",'ADT3'),
                     
                         #Cross, I=2
-                        #(mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_pipi_i20("snk_1", "snk_2", True)
-                        #* mk_pipi_i20("src_1", "src_2")
-                        #+ f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i20^dag(0) * pipi_i20(-tsep)",'ADT4'),
+                        (mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i20("snk_1", "snk_2", True)
+                        * mk_pipi_i20("src_1", "src_2")
+                        + f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i20^dag(0) * pipi_i20(-tsep)",'ADT4'),
                     
                         #Cross, I=0
-                        #(mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_pipi_i0("snk_1", "snk_2", True)
-                        #* mk_pipi_i0("src_1", "src_2")
-                        #+ f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i0^dag(0) * pipi_i0(-tsep)",'ADT4'),
+                        (mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0("snk_1", "snk_2", True)
+                        * mk_pipi_i0("src_1", "src_2")
+                        + f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i0^dag(0) * pipi_i0(-tsep)",'ADT4'),
 
                         #Rectangle
-                        #(mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_pipi_i0("snk_1", "snk_2", True)
-                        #* mk_pipi_i0("src_1", "src_2")
-                        #+ f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i0^dag(0) * pipi_i0(-tsep)",'ADT2'),
+                        (mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_fac(f"pipi_wave_function(src_1,src_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0("snk_1", "snk_2", True)
+                        * mk_pipi_i0("src_1", "src_2")
+                        + f"wf_snk({mode_snk}) * wf_src({mode_src}) * pipi_i0^dag(0) * pipi_i0(-tsep)",'ADT2'),
 
                         #Total
                         #mk_fac(f"pipi_wave_function(snk_1, snk_2, {mode_snk}, size, pipi_op_dis_4d_sqr_limit)")
@@ -1124,11 +1124,12 @@ def get_cexpr_pipi_corr_psnk_psrc():
 # -----
 
 # load in data for the improved subtraction. ADJUST ME
-fn_pipi_avg = "/home/jhildebrand28/ktopipi/"
+#fn_pipi_avg = "/home/jhildebrand28/ktopipi/"
+fn_pipi_avg = "/hpcgpfs01/scratch/jhildebra/vev_data/"
 
-#sigma_avg = np.load(fn_pipi_avg + "sigma_avg.npy")
+sigma_avg = np.load(fn_pipi_avg + "sigma_avg.npy")
 
-#pipi_vev = np.load(fn_pipi_avg + "pi_vev_avg_D3.npy") #shape (4,25,25,25)
+pipi_vev = np.load(fn_pipi_avg + "pi_vev_avg_D5.npy") #shape (4,25,25,25)
 
 #average over spatial coordinates
 def sigma_avg_sub(p1):
@@ -1172,7 +1173,7 @@ def get_cexpr_pipi_corr_psnk_psrc_V():
                 mk_fac(1) + f"1",
 
                 #improved vacuum subtraction with sigma using psel->psel vev
-                #mk_sigma('x_1') - mk_fac(f"sigma_avg_sub(x_1)") + f"sigma(-tsep) - <sigma>",
+                mk_sigma('x_1') - mk_fac(f"sigma_avg_sub(x_1)") + f"sigma(-tsep) - <sigma>",
             
                 ]
         for mode in [0,1,2,3]:
@@ -1186,8 +1187,8 @@ def get_cexpr_pipi_corr_psnk_psrc_V():
                         * mk_pipi_i0('x_1','x_2',True) + f"wf_snk({mode}) * pipi_i0^dag(0)",
                 
                         #improved vac sub using psel -> psel vev.
-                        #(mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_pipi_i0('x_1','x_2')) - mk_fac(f"pipi_avg_sub(x_1,x_2,size,{mode})") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>",        
+                        (mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pipi_i0('x_1','x_2')) - mk_fac(f"pipi_avg_sub(x_1,x_2,size,{mode})") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>",        
                 
                     ]
         cexpr = contract_simplify_compile(
@@ -1198,7 +1199,8 @@ def get_cexpr_pipi_corr_psnk_psrc_V():
         return cexpr
     base_positions_dict = dict()
     base_positions_dict["pipi_wave_function"] = pipi_wave_function
-    #base_positions_dict["pipi_avg_sub"] = pipi_avg_sub
+    base_positions_dict["pipi_avg_sub"] = pipi_avg_sub
+    base_positions_dict["sigma_avg_sub"] = sigma_avg_sub
     base_positions_dict["pipi_op_dis_4d_sqr_limit"] = 0.5 # default value, to be overrided by `pd`.
     return cache_compiled_cexpr(
             calc_cexpr,
@@ -1219,7 +1221,7 @@ def get_cexpr_pipi_corr_psnk_psrc_V():
 
 def auto_contract_pipi_corr_psnk_psrc_psel_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-fsel-total-test/traj-{traj}/pipi_vev.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipisc-test/traj-{traj}/pipi_vev.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -1317,7 +1319,7 @@ def auto_contract_pipi_corr_psnk_psrc_psel_V(job_tag, traj, get_get_prop, get_ps
 #contraction function for vacuum diagram. This will be done one bubble at a time, with the correlation happening after. 
 def auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-fsel-total-test/traj-{traj}/pipi_vev.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipisc-test/traj-{traj}/pipi_vev.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -1419,13 +1421,12 @@ def auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_pr
     q.json_results_append(f"{fname}: ld sig", q.get_data_sig_arr(ld, q.RngState(), 4))
     for i, en in enumerate(expr_names):
         q.json_results_append(f"{fname}: ld '{en}' sig", q.get_data_sig_arr(ld[i], q.RngState(), 4))
-
-#snk_2 in fsel. 
-#this will be used for both fully connected diagrams (R and C). 
+ 
+#this will be used for both fully connected diagrams (R and C). D is inculded in case the reconstruction doesn't work 
 @q.timer(is_timer_fork=True)
 def auto_contract_pipi_corr_psnk_psrc_DCR(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-fsel-total-test/traj-{traj}/pipi_corr_psnk_psrc.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipisc-test/traj-{traj}/pipi_corr_psnk_psrc.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_pipi_corr_psnk_psrc()
@@ -1614,12 +1615,11 @@ def auto_contract_pipi_corr_psnk_psrc_DCR(job_tag, traj, get_get_prop, get_psel_
     for i, en in enumerate(expr_names):
         q.json_results_append(f"{fname}: ld '{en}' sig", q.get_data_sig_arr(ld[i], q.RngState(), 4))
 
-#src_2 in fsel. 
-#this will be used for both fully connected diagrams (R and C). 
+
 @q.timer(is_timer_fork=True)
-def auto_contract_pipi_corr_psnk_psrc_D(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
+def auto_contract_pipi_corr_psnk_psrc_DCR1(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-D-test/traj-{traj}/pipi_corr_psnk_psrc_2.lat"
+    fn = f"{job_tag}/auto-contract-pipi-fc/traj-{traj}/pipi_corr_psnk_psrc1.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_pipi_corr_psnk_psrc()
@@ -1651,7 +1651,7 @@ def auto_contract_pipi_corr_psnk_psrc_D(job_tag, traj, get_get_prop, get_psel_pr
     #
     geo = q.Geometry(total_site)
     total_volume = geo.total_volume
-    pipi_op_t_sep = get_param(job_tag, "measurement", "pipi_op_t_sep")
+    pipiop_tsep_list = get_param(job_tag, "measurement", "pipi_op_t_sep")
     pipi_op_dis_4d_sqr_limit = get_param(job_tag, "measurement", "pipi_op_dis_4d_sqr_limit")
     pipi_corr_t_sep_list = get_param(job_tag, "measurement", "pipi_corr_t_sep_list")
     data_list = []
@@ -1682,29 +1682,161 @@ def auto_contract_pipi_corr_psnk_psrc_D(job_tag, traj, get_get_prop, get_psel_pr
         assert pidx_snk != pidx_src
         prob1 = psel_prob_arr[pidx_snk] * psel_prob_arr[pidx_src]
         idx_snk_src_2_list = []
-    
-        t_src_2 = (t_src - pipi_op_t_sep) % t_size
-        #for pipi_op_t_sep_snk in pipiop_tsep:
-        t_snk_2 = (t_snk + pipi_op_t_sep) % t_size
-        for idx_src_2 in fidx_list_list[t_src_2]:
-            if idx_src_2 in [ pidx_snk, pidx_src, ]:
-                continue
-            for pidx_snk_2 in pidx_list_list[t_snk_2]:
-                if pidx_snk_2 in [ idx_src_2, pidx_snk, pidx_src, ]:
+
+        for pipiop_tsep_idx, pipiop_tsep in enumerate(pipiop_tsep_list):
+            t_src_2 = (t_src - pipiop_tsep) % t_size
+            t_snk_2 = (t_snk + pipiop_tsep) % t_size
+            for pidx_src_2 in pidx_list_list[t_src_2]:
+                if pidx_src_2 in [ pidx_snk, pidx_src, ]:
                     continue
-                prob2 = psel_prob_arr[pidx_snk_2] * fsel_prob_arr[idx_src_2]
-                prob = prob1 * prob2
-                idx_snk_src_2_list.append((pidx_snk_2, idx_src_2, prob,)) #we then save a list of the second source and sink locations
-        #values array holds the evaluation of a given expression for each internal pion separation for both initial and final pions for each expression
+                for idx_snk_2 in fidx_list_list[t_snk_2]:
+                    if idx_snk_2 in [ pidx_src_2, pidx_snk, pidx_src, ]:
+                        continue
+                    prob2 = fsel_prob_arr[idx_snk_2] * psel_prob_arr[pidx_src_2]
+                    prob = prob1 * prob2
+                    idx_snk_src_2_list.append((idx_snk_2, pidx_src_2, prob, pipiop_tsep_idx)) #we then save a list of the second source and sink locations
         values = np.zeros(
-                (#len(pipiop_tsep),
+                (len(pipiop_tsep_list),
                  len(expr_names),
                  ),
                 dtype=np.complex128,
                 )
         
-        #iterating over the second sources and sinks, we evaluate each expression with the given source and sink locations, and assign them to the values array
-        for pidx_snk_2, idx_src_2, prob in idx_snk_src_2_list:
+        for idx_snk_2, pidx_src_2, prob, pipiop_tsep_idx in idx_snk_src_2_list:
+            xg_snk_2 = q.Coordinate(xg_fsel_arr[idx_snk_2])
+            xg_src_2 = q.Coordinate(xg_psel_arr[pidx_src_2])
+            t_snk_2 = xg_snk_2[3]
+            t_src_2 = xg_src_2[3]
+            pipi_op_t_sep_snk = (t_snk_2 - t_snk) % t_size
+            pipi_op_t_sep_src = (t_src - t_src_2) % t_size
+            assert pipi_op_t_sep_snk == pipi_op_t_sep_src
+            pd = {
+                    "snk_1": ("point", xg_snk.to_tuple(),),
+                    "snk_2": ("point-snk", xg_snk_2.to_tuple(),),
+                    "src_1": ("point", xg_src.to_tuple(),),
+                    "src_2": ("point", xg_src_2.to_tuple(),),
+                    "size": total_site,
+                    "pipi_op_dis_4d_sqr_limit": pipi_op_dis_4d_sqr_limit,
+                    }
+            val = eval_cexpr(cexpr, positions_dict=pd, get_prop=get_prop)
+            values[pipiop_tsep_idx] += val/prob
+        return values, t_sep_idx, data_list_idx, data_list_size
+    
+    def sum_function(val_list):
+        values = np.zeros(
+                (len(pipi_corr_t_sep_list),
+                 len(pipiop_tsep_list),
+                 len(expr_names),
+                 ),
+                dtype=np.complex128,
+                )
+        for val, t_sep_idx, data_list_idx, data_list_size in val_list:
+            if data_list_idx % (data_list_size // 1024 + 4) == 0:
+                q.displayln_info(0, f"{fname}: {data_list_idx}/{data_list_size}")
+            values[t_sep_idx] += val
+        return values.transpose(2, 1, 0)
+    res_sum = q.parallel_map_sum(feval, load_data(), sum_function=sum_function, chunksize=1)
+    res_sum = q.glb_sum(res_sum) 
+    
+    ld = q.mk_lat_data([
+        [ "expr_name", len(expr_names), expr_names, ],
+        [ "pipiop_tsep", len(pipiop_tsep_list), pipiop_tsep_list, ],
+        [ "t_sep", len(pipi_corr_t_sep_list), pipi_corr_t_sep_list, ],
+        ])
+    ld.from_numpy(res_sum)
+    ld.save(get_save_path(fn))
+    q.json_results_append(f"{fname}: ld sig", q.get_data_sig_arr(ld, q.RngState(), 4))
+    for i, en in enumerate(expr_names):
+        q.json_results_append(f"{fname}: ld '{en}' sig", q.get_data_sig_arr(ld[i], q.RngState(), 4))
+
+
+@q.timer(is_timer_fork=True)
+def auto_contract_pipi_corr_psnk_psrc_DCR2(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
+    fname = q.get_fname()
+    fn = f"{job_tag}/auto-contract-pipi-fc/traj-{traj}/pipi_corr_psnk_psrc2.lat"
+    if get_load_path(fn) is not None:
+        return
+    cexpr = get_cexpr_pipi_corr_psnk_psrc()
+    expr_names = get_expr_names(cexpr)
+    total_site = q.Coordinate(get_param(job_tag, "total_site"))
+    t_size = total_site[3]
+    get_prop = get_get_prop()
+    psel_prob = get_psel_prob()
+    fsel_prob = get_fsel_prob()
+    psel = psel_prob.psel
+    fsel = fsel_prob.fsel
+    if not fsel.is_containing(psel):
+        q.displayln_info(-1, f"WARNING: fsel is not containing psel. The probability weighting may be wrong.")
+    fsel_n_elems = fsel.n_elems
+    fsel_prob_arr = fsel_prob[:].ravel()
+    psel_prob_arr = psel_prob[:].ravel()
+    xg_psel_arr = psel[:]
+    xg_fsel_arr = fsel.to_psel_local()[:]
+    pidx_list_list = [ [] for i in range(t_size) ]
+    fidx_list_list = [ [] for i in range(t_size) ]
+    for pidx in range(len(xg_psel_arr)):
+        xg = xg_psel_arr[pidx]
+        pidx_list_list[xg[3]].append(pidx)
+
+    for fidx in range(len(xg_fsel_arr)):
+        xg = xg_fsel_arr[fidx]
+        fidx_list_list[xg[3]].append(fidx)
+    
+    #
+    geo = q.Geometry(total_site)
+    total_volume = geo.total_volume
+    pipiop_tsep_list = get_param(job_tag, "measurement", "pipi_op_t_sep")
+    pipi_op_dis_4d_sqr_limit = get_param(job_tag, "measurement", "pipi_op_dis_4d_sqr_limit")
+    pipi_corr_t_sep_list = get_param(job_tag, "measurement", "pipi_corr_t_sep_list")
+    data_list = []
+    for pidx_src in range(len(xg_psel_arr)):
+        xg_src = q.Coordinate(xg_psel_arr[pidx_src])
+        t_src = xg_src[3]
+        for t_sep_idx, t_sep in enumerate(pipi_corr_t_sep_list):
+            assert t_sep > 0
+            t_snk = (t_src + t_sep) % t_size
+            for pidx_snk in pidx_list_list[t_snk]:
+                xg_snk = q.Coordinate(xg_psel_arr[pidx_snk])
+                assert xg_snk[3] == t_snk
+                if pidx_snk == pidx_src:
+                    continue
+                data_list.append((pidx_snk, pidx_src, t_sep_idx,))
+    def load_data():
+        data_list_chunk = q.get_mpi_chunk(data_list)
+        data_list_size = len(data_list_chunk)
+        for data_list_idx, (pidx_snk, pidx_src, t_sep_idx,) in enumerate(data_list_chunk):
+            yield data_list_idx, data_list_size, pidx_snk, pidx_src, t_sep_idx
+    @q.timer
+    def feval(args):
+        data_list_idx, data_list_size, pidx_snk, pidx_src, t_sep_idx = args
+        xg_snk = q.Coordinate(xg_psel_arr[pidx_snk])
+        xg_src = q.Coordinate(xg_psel_arr[pidx_src])
+        t_snk = xg_snk[3]
+        t_src = xg_src[3]
+        assert pidx_snk != pidx_src
+        prob1 = psel_prob_arr[pidx_snk] * psel_prob_arr[pidx_src]
+        idx_snk_src_2_list = []
+
+        for pipiop_tsep_idx, pipiop_tsep in enumerate(pipiop_tsep_list):
+            t_src_2 = (t_src - pipiop_tsep) % t_size
+            t_snk_2 = (t_snk + pipiop_tsep) % t_size
+            for idx_src_2 in fidx_list_list[t_src_2]:
+                if idx_src_2 in [ pidx_snk, pidx_src, ]:
+                    continue
+                for pidx_snk_2 in pidx_list_list[t_snk_2]:
+                    if pidx_snk_2 in [ idx_src_2, pidx_snk, pidx_src, ]:
+                        continue
+                    prob2 = psel_prob_arr[pidx_snk_2] * fsel_prob_arr[idx_src_2]
+                    prob = prob1 * prob2
+                    idx_snk_src_2_list.append((pidx_snk_2, idx_src_2, prob,pipiop_tsep_idx)) #we then save a list of the second source and sink locations
+        values = np.zeros(
+                (len(pipiop_tsep_list),
+                 len(expr_names),
+                 ),
+                dtype=np.complex128,
+                )
+        
+        for pidx_snk_2, idx_src_2, prob, pipiop_tsep_idx in idx_snk_src_2_list:
             xg_snk_2 = q.Coordinate(xg_psel_arr[pidx_snk_2])
             xg_src_2 = q.Coordinate(xg_fsel_arr[idx_src_2])
             t_snk_2 = xg_snk_2[3]
@@ -1721,12 +1853,13 @@ def auto_contract_pipi_corr_psnk_psrc_D(job_tag, traj, get_get_prop, get_psel_pr
                     "pipi_op_dis_4d_sqr_limit": pipi_op_dis_4d_sqr_limit,
                     }
             val = eval_cexpr(cexpr, positions_dict=pd, get_prop=get_prop)
-            values += val/prob
+            values[pipiop_tsep_idx] += val/prob
         return values, t_sep_idx, data_list_idx, data_list_size
+    
     def sum_function(val_list):
         values = np.zeros(
                 (len(pipi_corr_t_sep_list),
-                 #len(pipiop_tsep),
+                 len(pipiop_tsep_list),
                  len(expr_names),
                  ),
                 dtype=np.complex128,
@@ -1735,14 +1868,14 @@ def auto_contract_pipi_corr_psnk_psrc_D(job_tag, traj, get_get_prop, get_psel_pr
             if data_list_idx % (data_list_size // 1024 + 4) == 0:
                 q.displayln_info(0, f"{fname}: {data_list_idx}/{data_list_size}")
             values[t_sep_idx] += val
-        return values.transpose(1, 0,)
+        return values.transpose(2, 1, 0)
     res_sum = q.parallel_map_sum(feval, load_data(), sum_function=sum_function, chunksize=1)
-    res_sum = q.glb_sum(res_sum)
-    res_sum *= 1.0 #/ (t_size * (total_volume / t_size) * (total_volume / t_size))
+    res_sum = q.glb_sum(res_sum) 
+    
     ld = q.mk_lat_data([
         [ "expr_name", len(expr_names), expr_names, ],
+        [ "pipiop_tsep", len(pipiop_tsep_list), pipiop_tsep_list, ],
         [ "t_sep", len(pipi_corr_t_sep_list), pipi_corr_t_sep_list, ],
-        #[ "pipi_op_t_sep_snk", len(pipiop_tsep), [ str(i+1) for i in range(len(pipiop_tsep)) ], ],
         ])
     ld.from_numpy(res_sum)
     ld.save(get_save_path(fn))
@@ -1750,11 +1883,149 @@ def auto_contract_pipi_corr_psnk_psrc_D(job_tag, traj, get_get_prop, get_psel_pr
     for i, en in enumerate(expr_names):
         q.json_results_append(f"{fname}: ld '{en}' sig", q.get_data_sig_arr(ld[i], q.RngState(), 4))
 
+
+@q.timer(is_timer_fork=True)
+def auto_contract_pipi_corr_psnk_psrc_DCR3(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
+    fname = q.get_fname()
+    fn = f"{job_tag}/auto-contract-pipi-fc/traj-{traj}/pipi_corr_psnk_psrc3.lat"
+    if get_load_path(fn) is not None:
+        return
+    cexpr = get_cexpr_pipi_corr_psnk_psrc()
+    expr_names = get_expr_names(cexpr)
+    total_site = q.Coordinate(get_param(job_tag, "total_site"))
+    t_size = total_site[3]
+    get_prop = get_get_prop()
+    psel_prob = get_psel_prob()
+    fsel_prob = get_fsel_prob()
+    psel = psel_prob.psel
+    fsel = fsel_prob.fsel
+    if not fsel.is_containing(psel):
+        q.displayln_info(-1, f"WARNING: fsel is not containing psel. The probability weighting may be wrong.")
+    fsel_n_elems = fsel.n_elems
+    fsel_prob_arr = fsel_prob[:].ravel()
+    psel_prob_arr = psel_prob[:].ravel()
+    xg_psel_arr = psel[:]
+    xg_fsel_arr = fsel.to_psel_local()[:]
+    pidx_list_list = [ [] for i in range(t_size) ]
+    fidx_list_list = [ [] for i in range(t_size) ]
+    for pidx in range(len(xg_psel_arr)):
+        xg = xg_psel_arr[pidx]
+        pidx_list_list[xg[3]].append(pidx)
+
+    for fidx in range(len(xg_fsel_arr)):
+        xg = xg_fsel_arr[fidx]
+        fidx_list_list[xg[3]].append(fidx)
+    
+    #
+    geo = q.Geometry(total_site)
+    total_volume = geo.total_volume
+    pipiop_tsep_list = get_param(job_tag, "measurement", "pipi_op_t_sep")
+    pipi_op_dis_4d_sqr_limit = get_param(job_tag, "measurement", "pipi_op_dis_4d_sqr_limit")
+    pipi_corr_t_sep_list = get_param(job_tag, "measurement", "pipi_corr_t_sep_list")
+    data_list = []
+    for pidx_src in range(len(xg_psel_arr)):
+        xg_src = q.Coordinate(xg_psel_arr[pidx_src])
+        t_src = xg_src[3]
+        for t_sep_idx, t_sep in enumerate(pipi_corr_t_sep_list):
+            assert t_sep > 0
+            t_snk = (t_src + t_sep) % t_size
+            for idx_snk in fidx_list_list[t_snk]:
+                xg_snk = q.Coordinate(xg_fsel_arr[idx_snk])
+                assert xg_snk[3] == t_snk
+                if idx_snk == pidx_src:
+                    continue
+                data_list.append((idx_snk, pidx_src, t_sep_idx,))
+    def load_data():
+        data_list_chunk = q.get_mpi_chunk(data_list)
+        data_list_size = len(data_list_chunk)
+        for data_list_idx, (idx_snk, pidx_src, t_sep_idx,) in enumerate(data_list_chunk):
+            yield data_list_idx, data_list_size, idx_snk, pidx_src, t_sep_idx
+    @q.timer
+    def feval(args):
+        data_list_idx, data_list_size, idx_snk, pidx_src, t_sep_idx = args
+        xg_snk = q.Coordinate(xg_fsel_arr[idx_snk])
+        xg_src = q.Coordinate(xg_psel_arr[pidx_src])
+        t_snk = xg_snk[3]
+        t_src = xg_src[3]
+        assert idx_snk != pidx_src
+        prob1 = fsel_prob_arr[idx_snk] * psel_prob_arr[pidx_src]
+        idx_snk_src_2_list = []
+
+        for pipiop_tsep_idx, pipiop_tsep in enumerate(pipiop_tsep_list):
+            t_src_2 = (t_src - pipiop_tsep) % t_size
+            t_snk_2 = (t_snk + pipiop_tsep) % t_size
+            for pidx_src_2 in pidx_list_list[t_src_2]:
+                if pidx_src_2 in [ idx_snk, pidx_src, ]:
+                    continue
+                for pidx_snk_2 in pidx_list_list[t_snk_2]:
+                    if pidx_snk_2 in [ pidx_src_2, idx_snk, pidx_src, ]:
+                        continue
+                    prob2 = psel_prob_arr[pidx_snk_2] * psel_prob_arr[pidx_src_2]
+                    prob = prob1 * prob2
+                    idx_snk_src_2_list.append((pidx_snk_2, pidx_src_2, prob, pipiop_tsep_idx)) #we then save a list of the second source and sink locations
+        #values array holds the evaluation of a given expression for each internal pion separation for both initial and final pions for each expression
+        values = np.zeros(
+                (len(pipiop_tsep_list),
+                 len(expr_names),
+                 ),
+                dtype=np.complex128,
+                )
+        
+        #iterating over the second sources and sinks, we evaluate each expression with the given source and sink locations, and assign them to the values array
+        for pidx_snk_2, pidx_src_2, prob, pipiop_tsep_idx in idx_snk_src_2_list:
+            xg_snk_2 = q.Coordinate(xg_psel_arr[pidx_snk_2])
+            xg_src_2 = q.Coordinate(xg_psel_arr[pidx_src_2])
+            t_snk_2 = xg_snk_2[3]
+            t_src_2 = xg_src_2[3]
+            pipi_op_t_sep_snk = (t_snk_2 - t_snk) % t_size
+            pipi_op_t_sep_src = (t_src - t_src_2) % t_size
+            assert pipi_op_t_sep_snk == pipi_op_t_sep_src
+            pd = {
+                    "snk_1": ("point-snk", xg_snk.to_tuple(),),
+                    "snk_2": ("point", xg_snk_2.to_tuple(),),
+                    "src_1": ("point", xg_src.to_tuple(),),
+                    "src_2": ("point", xg_src_2.to_tuple(),),
+                    "size": total_site,
+                    "pipi_op_dis_4d_sqr_limit": pipi_op_dis_4d_sqr_limit,
+                    }
+            val = eval_cexpr(cexpr, positions_dict=pd, get_prop=get_prop)
+            values[pipiop_tsep_idx] += val/prob
+        return values, t_sep_idx, data_list_idx, data_list_size
+    
+    def sum_function(val_list):
+        values = np.zeros(
+                (len(pipi_corr_t_sep_list),
+                 len(pipiop_tsep_list),
+                 len(expr_names),
+                 ),
+                dtype=np.complex128,
+                )
+        for val, t_sep_idx, data_list_idx, data_list_size in val_list:
+            if data_list_idx % (data_list_size // 1024 + 4) == 0:
+                q.displayln_info(0, f"{fname}: {data_list_idx}/{data_list_size}")
+            values[t_sep_idx] += val
+        return values.transpose(2, 1, 0)
+    res_sum = q.parallel_map_sum(feval, load_data(), sum_function=sum_function, chunksize=1)
+    res_sum = q.glb_sum(res_sum) 
+    
+    ld = q.mk_lat_data([
+        [ "expr_name", len(expr_names), expr_names, ],
+        [ "pipiop_tsep", len(pipiop_tsep_list), pipiop_tsep_list, ],
+        [ "t_sep", len(pipi_corr_t_sep_list), pipi_corr_t_sep_list, ],
+        ])
+    ld.from_numpy(res_sum)
+    ld.save(get_save_path(fn))
+    q.json_results_append(f"{fname}: ld sig", q.get_data_sig_arr(ld, q.RngState(), 4))
+    for i, en in enumerate(expr_names):
+        q.json_results_append(f"{fname}: ld '{en}' sig", q.get_data_sig_arr(ld[i], q.RngState(), 4))
+
+
+
 #full pipi contractions are done in the psel case, no reconstruction needed. 
 @q.timer(is_timer_fork=True)
 def auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-fsel-total-test/traj-{traj}/pipi_corr_psnk_psrc_psel.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipisc-test/traj-{traj}/pipi_corr_psnk_psrc_psel.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_pipi_corr_psnk_psrc_psel()
@@ -1780,7 +2051,7 @@ def auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel
     #
     geo = q.Geometry(total_site)
     total_volume = geo.total_volume
-    pipi_op_t_sep = get_param(job_tag, "measurement", "pipi_op_t_sep")
+    pipiop_tsep_list = get_param(job_tag, "measurement", "pipi_op_t_sep")
     pipi_op_dis_4d_sqr_limit = get_param(job_tag, "measurement", "pipi_op_dis_4d_sqr_limit")
     pipi_corr_t_sep_list = get_param(job_tag, "measurement", "pipi_corr_t_sep_list")
     data_list = []
@@ -1813,27 +2084,29 @@ def auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel
         prob1 = psel_prob_arr[pidx_snk] * psel_prob_arr[pidx_src]
         pidx_snk_src_2_list = []
     
-        t_src_2 = (t_src - pipi_op_t_sep) % t_size
-        #for pipi_op_t_sep_snk in pipiop_tsep:
-        t_snk_2 = (t_snk + pipi_op_t_sep) % t_size
-        for pidx_src_2 in pidx_list_list[t_src_2]:
-            if pidx_src_2 in [ pidx_snk, pidx_src, ]:
-                continue
-            for pidx_snk_2 in pidx_list_list[t_snk_2]:
-                if pidx_snk_2 in [ pidx_src_2, pidx_snk, pidx_src, ]:
+        for pipiop_tsep_idx, pipiop_tsep in enumerate(pipiop_tsep_list):
+
+            t_src_2 = (t_src - pipiop_tsep) % t_size
+            t_snk_2 = (t_snk + pipiop_tsep) % t_size
+        
+            for pidx_src_2 in pidx_list_list[t_src_2]:
+                if pidx_src_2 in [ pidx_snk, pidx_src, ]:
                     continue
-                prob2 = psel_prob_arr[pidx_snk_2] * psel_prob_arr[pidx_src_2]
-                prob = prob1 * prob2
-                pidx_snk_src_2_list.append((pidx_snk_2, pidx_src_2, prob,)) #we then save a list of the second source and sink locations
+                for pidx_snk_2 in pidx_list_list[t_snk_2]:
+                    if pidx_snk_2 in [ pidx_src_2, pidx_snk, pidx_src, ]:
+                        continue
+                    prob2 = psel_prob_arr[pidx_snk_2] * psel_prob_arr[pidx_src_2]
+                    prob = prob1 * prob2
+                    pidx_snk_src_2_list.append((pidx_snk_2, pidx_src_2, prob, pipiop_tsep_idx)) #we then save a list of the second source and sink locations
 
         values = np.zeros(
-                (#len(pipiop_tsep),
+                (len(pipiop_tsep_list),
                  len(expr_names),
                  ),
                 dtype=np.complex128,
                 )
         
-        for pidx_snk_2, pidx_src_2, prob in pidx_snk_src_2_list:
+        for pidx_snk_2, pidx_src_2, prob, pipiop_tsep_idx in pidx_snk_src_2_list:
             xg_snk_2 = q.Coordinate(xg_psel_arr[pidx_snk_2])
             xg_src_2 = q.Coordinate(xg_psel_arr[pidx_src_2])
             t_snk_2 = xg_snk_2[3]
@@ -1850,12 +2123,12 @@ def auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel
                     "pipi_op_dis_4d_sqr_limit": pipi_op_dis_4d_sqr_limit,
                     }
             val = eval_cexpr(cexpr, positions_dict=pd, get_prop=get_prop)
-            values += val/prob
+            values[pipiop_tsep_idx] += val/prob
         return values, t_sep_idx, data_list_idx, data_list_size
     def sum_function(val_list):
         values = np.zeros(
                 (len(pipi_corr_t_sep_list),
-                 #len(pipiop_tsep),
+                 len(pipiop_tsep),
                  len(expr_names),
                  ),
                 dtype=np.complex128,
@@ -1864,12 +2137,13 @@ def auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel
             if data_list_idx % (data_list_size // 1024 + 4) == 0:
                 q.displayln_info(0, f"{fname}: {data_list_idx}/{data_list_size}")
             values[t_sep_idx] += val
-        return values.transpose(1, 0,)
+        return values.transpose(2, 1, 0,)
     res_sum = q.parallel_map_sum(feval, load_data(), sum_function=sum_function, chunksize=1)
     res_sum = q.glb_sum(res_sum)
     res_sum *= 1.0 #/ (t_size * (total_volume / t_size) * (total_volume / t_size))
     ld = q.mk_lat_data([
         [ "expr_name", len(expr_names), expr_names, ],
+        [ "pipiop_tsep", len(pipiop_tsep_list), pipiop_tsep_list],
         [ "t_sep", len(pipi_corr_t_sep_list), pipi_corr_t_sep_list, ],
         ])
     ld.from_numpy(res_sum)
@@ -1877,6 +2151,7 @@ def auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel
     q.json_results_append(f"{fname}: ld sig", q.get_data_sig_arr(ld, q.RngState(), 4))
     for i, en in enumerate(expr_names):
         q.json_results_append(f"{fname}: ld '{en}' sig", q.get_data_sig_arr(ld[i], q.RngState(), 4))
+
 
 # --------------------------------------------
 # 3 point ATW matrix element <pi | O_2pi | pi>
@@ -2283,7 +2558,7 @@ def run_auto_contraction(
         get_fsel_prob,
         ):
     fname = q.get_fname()
-    fn_checkpoint = f"{job_tag}/auto-contract-meson-test/traj-{traj}/checkpoint.txt"
+    fn_checkpoint = f"{job_tag}/auto-contract-48I-pipisc-test/traj-{traj}/checkpoint.txt"
     if get_load_path(fn_checkpoint) is not None:
         q.displayln_info(0, f"{fname}: '{fn_checkpoint}' exists.")
         return
@@ -2304,10 +2579,10 @@ def run_auto_contraction(
 
         #contains I=0 two pion operator one point function and sigma one point function. These will be used to reconstruct the disconnected 
         #piece for both  the pipi-pipi terms and pipi-sigma terms inthe correlator matrix, along with the vacuum subtraction for those who need it
-        #auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
+        auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
         
         #contains all connected diagrams necessary for the correlator matrix. These are calculated with a two point average over fsel permutations. 
-        #auto_contract_pipi_corr_psnk_psrc_DCR(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
+        auto_contract_pipi_corr_psnk_psrc_DCR(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
 
         #ATW 3pt, fsel
         #auto_contract_ATW3pt_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) #full 3pt function calculation, two point fsel perm average
@@ -2321,8 +2596,8 @@ def run_auto_contraction(
     #auto_contract_meson_corr_psnk_psrc_psel_smeared(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
     
     #pipi psrc psel
-    #auto_contract_pipi_corr_psnk_psrc_psel_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
-    #auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    auto_contract_pipi_corr_psnk_psrc_psel_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
 
     #ATW 3pt funcs
     #auto_contract_ATW3pt_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
@@ -2345,7 +2620,7 @@ def run_job_contraction(job_tag, traj):
         #
     #
     fns_produce = [
-            f"{job_tag}/auto-contract-meson-test/traj-{traj}/checkpoint.txt",
+            f"{job_tag}/auto-contract-48I-pipisc-test/traj-{traj}/checkpoint.txt",
             #
             ]
     fns_need = [
@@ -2383,7 +2658,7 @@ def run_job_contraction(job_tag, traj):
     prop_types = [
             #"wsrc psel s",
             #"wsrc psel l",
-            "psrc psel s",
+            #"psrc psel s",
             "psrc psel l",
             #"gauge transform" #necessary for smeared operators. 
             # "rand_u1 fsel c",

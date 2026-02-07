@@ -34,9 +34,9 @@ load_path_list[:] = [
         #"/data2/qcddata3-prop",
         "/hpcgpfs01/scratch/jhildebra/psrc_props",
         "/hpcgpfs01/work/lqcd/staging/RBC/qcddata/MDWF/2+1f/48nt96/IWASAKI/b2.13/ls24b+c2/M1.8/ms0.0362/mu0.00078/jhildebra",
-        "/data1/qcddata2",
-        "/data1/qcddata3",
-        "/data2/qcddata3-prop",
+        #"/data1/qcddata2",
+        #"/data1/qcddata3",
+        #"/data2/qcddata3-prop",
         ]
 
 # ----
@@ -240,7 +240,7 @@ def get_cexpr_pipi_corr_psnk_psrc_psel():
 
 @q.timer
 def get_cexpr_pipi_corr_psnk_psrc():
-    fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_psnk_psrc"
+    fn_base = "cache/auto_contract_cexpr/get_cexpr_pipi_psnk_psrc_fc"
     def calc_cexpr():
         diagram_type_dict = dict() #the auto contractor deals with each term within each type, along with prefactors present in the sum. 
         #pipi-pipi
@@ -534,7 +534,7 @@ def auto_contract_pipi_corr_psnk_psrc_DCR(job_tag, traj, get_get_prop, get_psel_
 @q.timer(is_timer_fork=True)
 def auto_contract_pipi_corr_psnk_psrc_DCR1(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-48I-pipi-fc/traj-{traj}/pipi_corr_psnk_psrc1.lat"
+    fn = f"{job_tag}/auto-contract-pipi-fc/traj-{traj}/pipi_corr_psnk_psrc1.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_pipi_corr_psnk_psrc()
@@ -610,7 +610,6 @@ def auto_contract_pipi_corr_psnk_psrc_DCR1(job_tag, traj, get_get_prop, get_psel
                     prob2 = fsel_prob_arr[idx_snk_2] * psel_prob_arr[pidx_src_2]
                     prob = prob1 * prob2
                     idx_snk_src_2_list.append((idx_snk_2, pidx_src_2, prob, pipiop_tsep_idx)) #we then save a list of the second source and sink locations
-        #values array holds the evaluation of a given expression for each internal pion separation for both initial and final pions for each expression
         values = np.zeros(
                 (len(pipiop_tsep_list),
                  len(expr_names),
@@ -618,7 +617,6 @@ def auto_contract_pipi_corr_psnk_psrc_DCR1(job_tag, traj, get_get_prop, get_psel
                 dtype=np.complex128,
                 )
         
-        #iterating over the second sources and sinks, we evaluate each expression with the given source and sink locations, and assign them to the values array
         for idx_snk_2, pidx_src_2, prob, pipiop_tsep_idx in idx_snk_src_2_list:
             xg_snk_2 = q.Coordinate(xg_fsel_arr[idx_snk_2])
             xg_src_2 = q.Coordinate(xg_psel_arr[pidx_src_2])
@@ -671,7 +669,7 @@ def auto_contract_pipi_corr_psnk_psrc_DCR1(job_tag, traj, get_get_prop, get_psel
 @q.timer(is_timer_fork=True)
 def auto_contract_pipi_corr_psnk_psrc_DCR2(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-48I-pipi-fc/traj-{traj}/pipi_corr_psnk_psrc2.lat"
+    fn = f"{job_tag}/auto-contract-pipi-fc/traj-{traj}/pipi_corr_psnk_psrc2.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_pipi_corr_psnk_psrc()
@@ -747,7 +745,6 @@ def auto_contract_pipi_corr_psnk_psrc_DCR2(job_tag, traj, get_get_prop, get_psel
                     prob2 = psel_prob_arr[pidx_snk_2] * fsel_prob_arr[idx_src_2]
                     prob = prob1 * prob2
                     idx_snk_src_2_list.append((pidx_snk_2, idx_src_2, prob,pipiop_tsep_idx)) #we then save a list of the second source and sink locations
-        #values array holds the evaluation of a given expression for each internal pion separation for both initial and final pions for each expression
         values = np.zeros(
                 (len(pipiop_tsep_list),
                  len(expr_names),
@@ -755,7 +752,6 @@ def auto_contract_pipi_corr_psnk_psrc_DCR2(job_tag, traj, get_get_prop, get_psel
                 dtype=np.complex128,
                 )
         
-        #iterating over the second sources and sinks, we evaluate each expression with the given source and sink locations, and assign them to the values array
         for pidx_snk_2, idx_src_2, prob, pipiop_tsep_idx in idx_snk_src_2_list:
             xg_snk_2 = q.Coordinate(xg_psel_arr[pidx_snk_2])
             xg_src_2 = q.Coordinate(xg_fsel_arr[idx_src_2])
@@ -807,7 +803,7 @@ def auto_contract_pipi_corr_psnk_psrc_DCR2(job_tag, traj, get_get_prop, get_psel
 @q.timer(is_timer_fork=True)
 def auto_contract_pipi_corr_psnk_psrc_DCR3(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-48I-pipi-fc/traj-{traj}/pipi_corr_psnk_psrc1.lat"
+    fn = f"{job_tag}/auto-contract-pipi-fc/traj-{traj}/pipi_corr_psnk_psrc3.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_pipi_corr_psnk_psrc()
@@ -946,7 +942,7 @@ def auto_contract_pipi_corr_psnk_psrc_DCR3(job_tag, traj, get_get_prop, get_psel
 @q.timer(is_timer_fork=True)
 def auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-48I-pipi-fc/traj-{traj}/pipi_corr_psnk_psrc_psel.lat"
+    fn = f"{job_tag}/auto-contract-pipi-fc/traj-{traj}/pipi_corr_psnk_psrc_psel.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_pipi_corr_psnk_psrc_psel()
@@ -1084,7 +1080,7 @@ def run_auto_contraction(
         get_fsel_prob,
         ):
     fname = q.get_fname()
-    fn_checkpoint = f"{job_tag}/auto-contract-48I-pipisc-fc/traj-{traj}/checkpoint.txt"
+    fn_checkpoint = f"{job_tag}/auto-contract-pipisc-fc/traj-{traj}/checkpoint.txt"
     if get_load_path(fn_checkpoint) is not None:
         q.displayln_info(0, f"{fname}: '{fn_checkpoint}' exists.")
         return
@@ -1100,8 +1096,8 @@ def run_auto_contraction(
         #auto_contract_pipi_corr_psnk_psrc_DCR(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
 
         #one function for eachfsel permutation (memory concerns)
-        #auto_contract_pipi_corr_psnk_psrc_DCR1(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
-        #auto_contract_pipi_corr_psnk_psrc_DCR2(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+        auto_contract_pipi_corr_psnk_psrc_DCR1(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+        auto_contract_pipi_corr_psnk_psrc_DCR2(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
         auto_contract_pipi_corr_psnk_psrc_DCR3(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
     
     #pipi psrc psel
@@ -1125,7 +1121,7 @@ def run_job_contraction(job_tag, traj):
         #
     #
     fns_produce = [
-            f"{job_tag}/auto-contract-48I-pipisc-fc/traj-{traj}/checkpoint.txt",
+            f"{job_tag}/auto-contract-pipisc-fc/traj-{traj}/checkpoint.txt",
             #
             ]
     fns_need = [
@@ -1163,7 +1159,7 @@ def run_job_contraction(job_tag, traj):
     prop_types = [
             #"wsrc psel s",
             #"wsrc psel l",
-            "psrc psel s",
+            #"psrc psel s",
             "psrc psel l",
             #"gauge transform" #necessary for smeared operators. 
             # "rand_u1 fsel c",
