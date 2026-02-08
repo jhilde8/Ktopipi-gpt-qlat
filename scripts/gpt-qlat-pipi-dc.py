@@ -1002,13 +1002,17 @@ def get_cexpr_pipi_corr_psnk_psrc_psel():
 # -----
 
 # load in data for the improved subtraction. ADJUST ME
-#fn_pipi_avg = "/home/jhildebrand28/ktopipi/"
+fn_pipi_avg = "/home/jhildebrand28/ktopipi/data/pipi_psel_vevs/"
 
-fn_pipi_avg = "/hpcgpfs01/scratch/jhildebra/vev_data/"
+#fn_pipi_avg = "/hpcgpfs01/scratch/jhildebra/vev_data/"
 
 sigma_avg = np.load(fn_pipi_avg + "sigma_avg.npy")
 
-pipi_vev = np.load(fn_pipi_avg + "pi_vev_avg_D5.npy") #shape (4,25,25,25)
+pipi_vev_D5 = np.load(fn_pipi_avg + "pi_vev_avg_D5.npy") #shape (4,25,25,25)
+pipi_vev_D7 = np.load(fn_pipi_avg + "pi_vev_avg_D7.npy") #shape (4,25,25,25)
+pipi_vev_D9 = np.load(fn_pipi_avg + "pi_vev_avg_D9.npy") #shape (4,25,25,25)
+
+pipi_vev_all = np.stack((pipi_vev_D5, pipi_vev_D7, pipi_vev_D9),axis=1)
 
 #average over spatial coordinates
 def sigma_avg_sub(p1):
@@ -1019,7 +1023,7 @@ def sigma_avg_sub(p1):
     sub = sigma_avg[t]
     return sub
     
-def pipi_avg_sub(p1, p2, size, mode):
+def pipi_avg_sub(p1, p2, size, mode, Delta_idx):
     p1_tag, c1 = p1
     p2_tag, c2 = p2
     c1 = q.Coordinate(c1)
@@ -1036,7 +1040,7 @@ def pipi_avg_sub(p1, p2, size, mode):
         q.displayln_info(-1,f"ERROR: invalid momentum mode")
 
     #q.displayln_info(f"DEBUG: time==0 if statement entered, time={t2}")
-    return pipi_vev[mode, abs(x_rel),abs(y_rel),abs(z_rel)]
+    return pipi_vev_all[mode, Delta_idx, abs(x_rel),abs(y_rel),abs(z_rel)]
 
 # -----
     
@@ -1060,14 +1064,11 @@ def get_cexpr_pipi_corr_psnk_psrc_V():
                         # I=0 V term
                         mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
                         * mk_pipi_i0('x_1','x_2') + f"wf_src({mode}) * pipi_i0(-tsep)",
-
-                        #I=0 V term, daggered. Should be identical to the above.
-                        mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
-                        * mk_pipi_i0('x_1','x_2',True) + f"wf_snk({mode}) * pipi_i0^dag(0)",
                 
                         #improved vac sub using psel -> psel vev.
                         (mk_fac(f"pipi_wave_function(x_1,x_2,{mode}, size, pipi_op_dis_4d_sqr_limit)")
-                        * mk_pipi_i0('x_1','x_2')) - mk_fac(f"pipi_avg_sub(x_1,x_2,size,{mode})") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>",        
+                        * mk_pipi_i0('x_1','x_2')) - mk_fac(f"pipi_avg_sub(x_1,x_2,size,{mode},Delta_idx)") + f"wf_src({mode}) * pipi_i0(-tsep) - <pipi>",        
+
                 
                     ]
         cexpr = contract_simplify_compile(
@@ -1130,7 +1131,7 @@ def auto_contract_pipi_corr_psnk_psrc_psel_V(job_tag, traj, get_get_prop, get_ps
 
     geo = q.Geometry(total_site)
     total_volume = geo.total_volume
-    pipiop_tsep = get_param(job_tag, "measurement", "pipi_op_t_sep")
+    pipiop_tsep_list = get_param(job_tag, "measurement", "pipi_op_t_sep")
     pipi_op_dis_4d_sqr_limit = get_param(job_tag, "measurement", "pipi_op_dis_4d_sqr_limit")
 
     def load_data_single():
@@ -1167,8 +1168,9 @@ def auto_contract_pipi_corr_psnk_psrc_psel_V(job_tag, traj, get_get_prop, get_ps
     
                 pd = {
                         "x_1": ("point", xg_src.to_tuple(),),
-                        "x_2": ("point-snk", xg_src_2.to_tuple(),),
+                        "x_2": ("point", xg_src_2.to_tuple(),),
                         "size": total_site,
+                        "Delta_idx": pipiop_tsep_idx,
                         "pipi_op_dis_4d_sqr_limit": pipi_op_dis_4d_sqr_limit,
                         }
     
@@ -1458,21 +1460,25 @@ def run_auto_contraction(
     assert get_prop is not None
     use_fsel_prop = get_param(job_tag, "measurement", "use_fsel_prop", default=True)
     # ADJUST ME
-    if use_fsel_prop:
+    #if use_fsel_prop:
         #meson, psrc. Includes pion and sigma two point function.
-        auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+        #auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
 
         #meson, smeared
         #auto_contract_meson_corr_psnk_psrc_smeared(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
 
         #pipi fsel.
-        auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
+        #auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
 
         
 
     #meson psrc psel
     #auto_contract_meson_corr_psnk_psrc_psel_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
+<<<<<<< Updated upstream
     auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)  
+=======
+    #auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)  
+>>>>>>> Stashed changes
 
     #meson, psel, smeared
     #auto_contract_meson_corr_psnk_psrc_psel_smeared(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
@@ -1580,7 +1586,7 @@ set_param("16IH2", "measurement", "pipi_corr_t_sep_list")(list(range(1, 11))) # 
 set_param("16IH2", "measurement", "tsep_snk_src_3pt")([12]) #constant source-sink separation in 3pt function
 set_param("16IH2", "measurement", "use_fsel_prop")(True)
 
-set_param("48I", "traj_list")([2165])
+set_param("48I", "traj_list")([1152])
 set_param("48I", "measurement", "auto_contractor_chunk_size")(128)
 set_param("48I", "measurement", "meson_tensor_t_sep")(12)
 set_param("48I", "measurement", "pipi_op_t_sep")([5,7,9]) #Delta
@@ -1590,7 +1596,7 @@ set_param("48I", "measurement", "pipi_corr_t_sep_list")(list(range(1, 24))) #lis
 set_param("48I", "measurement", "pipi_tensor_t_sep_list")([ 1, 2, ]) #not used
 set_param("48I", "measurement", "pipi_tensor_t_max")(20) #not used
 set_param("48I", "measurement", "pipi_tensor_r_max")(24) #not used
-set_param("48I", "measurement", "use_fsel_prop")(True)
+set_param("48I", "measurement", "use_fsel_prop")(False)
 
 set_param("64I", "traj_list")(list(range(1200, 3000, 40)))
 set_param("64I", "measurement", "meson_tensor_t_sep")(18)
