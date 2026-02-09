@@ -209,7 +209,7 @@ def get_cexpr_meson_corr_psnk_psrc():
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-V/traj-{traj}/meson_corr_psnk_psrc.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipi-dc/traj-{traj}/meson_corr_psnk_psrc.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -332,7 +332,7 @@ def auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_pro
 @q.timer(is_timer_fork=True)
 def auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-ATW-sub-test/traj-{traj}/meson_corr_psnk_psrc_psel.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipi-dc/traj-{traj}/meson_corr_psnk_psrc_psel.lat"
     if get_load_path(fn) is not None:
         return
     cexpr = get_cexpr_meson_corr_psnk_psrc()
@@ -828,10 +828,10 @@ def get_cexpr_pipi_3ptATW_corr_psrc_psnk():
                         + f"wf({mode_snk}) * wf({mode_src}) * pi0^dag(0) * pipi_i0(-t_int) * pi0(-t)",
 
                         # <pi0(t_1+t_2) * 2pi(t_2)_I0 * pi0(0)^dag>
-                        #(mk_fac(f"wave_function(snk,src,{mode_snk},size)")
-                        #* mk_fac(f"pipi_wave_function(int_1,int_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
-                        #* mk_pi_0("src", True) * mk_pipi_i0("int_1","int_2") * mk_pi_0("snk")
-                        #+ f"wf({mode_snk}) * wf({mode_src}) * pi0^dag(0) * pipi_i0(-t_int) * pi0(-t)",['ADT1','ADT2','ADT4','ADT5']),
+                        (mk_fac(f"wave_function(snk,src,{mode_snk},size)")
+                        * mk_fac(f"pipi_wave_function(int_1,int_2, {mode_src}, size, pipi_op_dis_4d_sqr_limit)")
+                        * mk_pi_0("src", True) * mk_pipi_i0("int_1","int_2") * mk_pi_0("snk")
+                        + f"wf({mode_snk}) * wf({mode_src}) * pi0^dag(0) * pipi_i0(-t_int) * pi0(-t)",['ADT1','ADT2','ADT4','ADT5']),
 
                         # <pi0(t_1+t_2) * 2pi(t_2)_I0 * pi0(0)^dag>
                         #(mk_fac(f"wave_function(snk,src,{mode_snk},size)")
@@ -883,7 +883,7 @@ def get_cexpr_pipi_3ptATW_corr_psrc_psnk():
 #contraction function for vacuum diagram. This will be done one bubble at a time, with the correlation happening after. 
 def auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-pipi-V/traj-{traj}/pipi_vev.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipi-dc/traj-{traj}/pipi_vev.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -990,7 +990,7 @@ def auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_pr
 @q.timer(is_timer_fork=True)
 def auto_contract_ATW3pt_psnk_psrc1(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-ATW-test/traj-{traj}/pipi_ATW_psnk_psrc1.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipi-dc/traj-{traj}/pipi_ATW_psnk_psrc1.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -1168,7 +1168,7 @@ def auto_contract_ATW3pt_psnk_psrc1(job_tag, traj, get_get_prop, get_psel_prob, 
     
 def auto_contract_ATW3pt_psnk_psrc2(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-ATW-test/traj-{traj}/pipi_ATW_psnk_psrc2.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipi-dc/traj-{traj}/pipi_ATW_psnk_psrc2.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -1237,7 +1237,7 @@ def auto_contract_ATW3pt_psnk_psrc2(job_tag, traj, get_get_prop, get_psel_prob, 
                     for pidx_snk in pidx_list_list[t_snk]:
                         xg_snk = q.Coordinate(xg_psel_arr[pidx_snk])
                         assert xg_snk[3] == t_snk
-                        if pidx_snk == pidx_src or pidx_snk == pidx_int:
+                        if pidx_snk == pidx_src or pidx_snk == idx_int:
                             continue
 
                         data_list.append((pidx_snk,idx_int,pidx_src,t_sep_idx, ss_sep_idx))
@@ -1258,7 +1258,7 @@ def auto_contract_ATW3pt_psnk_psrc2(job_tag, traj, get_get_prop, get_psel_prob, 
         t_snk = xg_snk[3]
         t_int = xg_int[3]
         t_src = xg_src[3]
-        prob1 = psel_prob_arr[pidx_snk] * fsel_prob_arr[pidx_int] * psel_prob_arr[pidx_src]
+        prob1 = psel_prob_arr[pidx_snk] * fsel_prob_arr[idx_int] * psel_prob_arr[pidx_src]
         pidx_int_2_list = []
 
         for pipiop_tsep_idx, pipiop_tsep in enumerate(pipiop_tsep_list):
@@ -1271,7 +1271,7 @@ def auto_contract_ATW3pt_psnk_psrc2(job_tag, traj, get_get_prop, get_psel_prob, 
                 continue
         
             for pidx_int_2 in pidx_list_list[t_int_2]:
-                if pidx_int_2 in  [pidx_snk,pidx_src,pidx_int]:
+                if pidx_int_2 in  [pidx_snk,pidx_src,idx_int]:
                     continue
     
                 prob2 = psel_prob_arr[pidx_int_2]
@@ -1513,7 +1513,7 @@ def auto_contract_ATW3pt_psnk_psrc3(job_tag, traj, get_get_prop, get_psel_prob, 
 
 def auto_contract_pipi_corr_psnk_psrc_psel_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-ATW-sub-test/traj-{traj}/pipi_vev_psel.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipi-dc/traj-{traj}/pipi_vev_psel.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -1745,7 +1745,7 @@ def auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel
 @q.timer(is_timer_fork=True)
 def auto_contract_ATW3pt_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob):
     fname = q.get_fname()
-    fn = f"{job_tag}/auto-contract-ATW-test/traj-{traj}/pipi_ATW_psnk_psrc_psel.lat"
+    fn = f"{job_tag}/auto-contract-48I-pipi-dc/traj-{traj}/pipi_ATW_psnk_psrc_psel.lat"
     if get_load_path(fn) is not None:
         return
 
@@ -1930,7 +1930,7 @@ def run_auto_contraction(
         get_fsel_prob,
         ):
     fname = q.get_fname()
-    fn_checkpoint = f"{job_tag}/auto-contract-ATW-test/traj-{traj}/checkpoint.txt"
+    fn_checkpoint = f"{job_tag}/auto-contract-48I-pipi-dc/traj-{traj}/checkpoint.txt"
     if get_load_path(fn_checkpoint) is not None:
         q.displayln_info(0, f"{fname}: '{fn_checkpoint}' exists.")
         return
@@ -1942,30 +1942,24 @@ def run_auto_contraction(
     # ADJUST ME
     if use_fsel_prop:
         #meson, psrc. Includes pion and sigma two point function.
-        #auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
-
-        #meson, smeared
-        #auto_contract_meson_corr_psnk_psrc_smeared(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+        auto_contract_meson_corr_psnk_psrc(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
 
         #pipi fsel.
-        #auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
+        auto_contract_pipi_corr_psnk_psrc_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
 
         #ATW fsel
         auto_contract_ATW3pt_psnk_psrc1(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
         auto_contract_ATW3pt_psnk_psrc2(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
-        auto_contract_ATW3pt_psnk_psrc3(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+        #auto_contract_ATW3pt_psnk_psrc3(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
 
         
 
     #meson psrc psel
     #auto_contract_meson_corr_psnk_psrc_psel_pos(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob) 
-    #auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)  
-
-    #meson, psel, smeared
-    #auto_contract_meson_corr_psnk_psrc_psel_smeared(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    auto_contract_meson_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)  
     
     #pipi psrc psel
-    #auto_contract_pipi_corr_psnk_psrc_psel_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
+    auto_contract_pipi_corr_psnk_psrc_psel_V(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
     #auto_contract_pipi_corr_psnk_psrc_psel(job_tag, traj, get_get_prop, get_psel_prob, get_fsel_prob)
 
     #ATW three point function, psel
@@ -1989,7 +1983,7 @@ def run_job_contraction(job_tag, traj):
         #
     #
     fns_produce = [
-            f"{job_tag}/auto-contract-ATW-test/traj-{traj}/checkpoint.txt",
+            f"{job_tag}/auto-contract-48I-pipi-dc/traj-{traj}/checkpoint.txt",
             #
             ]
     fns_need = [
@@ -2027,7 +2021,7 @@ def run_job_contraction(job_tag, traj):
     prop_types = [
             #"wsrc psel s",
             #"wsrc psel l",
-            "psrc psel s",
+            #"psrc psel s",
             "psrc psel l",
             #"gauge transform" #necessary for smeared operators. 
             # "rand_u1 fsel c",
@@ -2070,11 +2064,11 @@ set_param("16IH2", "measurement", "pipi_corr_t_sep_list")(list(range(1, 11))) # 
 set_param("16IH2", "measurement", "tsep_snk_src_3pt")([16,20]) #constant source-sink separation in 3pt function
 set_param("16IH2", "measurement", "use_fsel_prop")(True)
 
-set_param("48I", "traj_list")(list(range(1302,1493,10)))
+set_param("48I", "traj_list")([2165])
 set_param("48I", "measurement", "auto_contractor_chunk_size")(128)
 set_param("48I", "measurement", "meson_tensor_t_sep")(12)
-set_param("48I", "measurement", "pipi_op_t_sep")([5]) #Delta
-set_param("48I", "measurement", "tsep_snk_src_3pt")([24])
+set_param("48I", "measurement", "pipi_op_t_sep")([5,7,9]) #Delta
+set_param("48I", "measurement", "tsep_snk_src_3pt")([20,24,28,32])
 set_param("48I", "measurement", "pipi_op_dis_4d_sqr_limit")(25.0) #Minimum squared 4d distance between the two pion operators. We need to try with 9.0 and 16.0
 set_param("48I", "measurement", "pipi_corr_t_sep_list")(list(range(1, 24))) #list of time separations between the two pion operators that we want to measure
 
