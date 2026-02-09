@@ -162,8 +162,30 @@ def construct_tsep(corr,tsep_max):
 
     return corr_red
 
+#function that uses a pipi vev and meson two point function to construct the vacuum term present 
+#in the ATW three point function
+#meson_bubble has shape (ncf, nexpr, nt, tsrc), vev_bubble has shape (ncf, nexpr, Delta, t_src) 
+#where nexpr is ONLY (counter, mode_000, mode_001, mode_011, mode_111). 
+def construct_ATW_V(meson_bubble, vev_bubble, ss_sep_list, Delta_list):
+    #since we operate at a fixed source-sink separation, we only need one slice of the meson array
+    NT = 96
+    ncf = meson_bubble.shape[0]
+    nexpr = meson_bubble.shape[1]
+    
+    vac = np.zeros((ncf,nexpr,len(Delta_list),len(ss_sep_list),max(ss_sep_list)),dtype=np.complex128)
+
+    for tsep_idx, tsep in enumerate(ss_sep_list):
+        meson = meson_bubble[:,:,tsep,:]
+        for Delta_idx,Delta in enumerate(Delta_list):
+            for t2_idx,t2 in enumerate(list(range(1,tsep-Delta))):
+                for tsrc in range(NT):
+                    tau = (tsrc + t2) % NT
+                    vac[:,:,Delta_idx,tsep_idx,t2_idx] += meson[:,:,tsrc] * vev_bubble[:,:,Delta_idx,tau]
+    vac = vac/NT
+    return vac
+
 #constructs the vacuum diagram from two two pion vacuum expectation values
-def construct_V(bubble_raw_1,bubble_raw_2,tsep_max,Delta):
+def construct_pipi_V(bubble_raw_1,bubble_raw_2,tsep_max,Delta):
     ncf = bubble_raw_1.shape[0]
     nt = bubble_raw_1.shape[-1]
     vac = np.zeros((ncf, tsep_max),dtype=np.float64)
@@ -182,7 +204,7 @@ def construct_V(bubble_raw_1,bubble_raw_2,tsep_max,Delta):
 
 #function that constructs the direct diagram contribution from an array of two bubbles. 
 #input arrays must be shape (ncf, nt), as this correlation needs to be done on an expression by expression basis
-def construct_D(bubble1, bubble2, tsep_max, Delta,t_size):
+def construct_pipi_D(bubble1, bubble2, tsep_max, Delta,t_size):
     ncf = bubble1.shape[0]
     nt = bubble1.shape[1]
     D1 = np.zeros((ncf, tsep_max), dtype=np.complex128)

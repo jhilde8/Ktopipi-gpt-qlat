@@ -190,7 +190,10 @@ def c2pt_2state_fit(data_jk, fit_range, shrinkage):
 
 def meson_energy_1state(data_jk, tmin, tmax, fit_model=None, shrinkage=1.0):
     if fit_model == None:
-        fit_model = pure_exp
+        fit_model = two_exp
+
+    #elif fit_model == 2:
+    #    fit_model = two_exp
     
     fit_range = (tmin, tmax)
     popt_avg, fit_errors, fit_params, chi2_dof = c2pt_1state_fit(data_jk, fit_range, fit_model, shrinkage)
